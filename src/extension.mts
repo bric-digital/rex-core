@@ -5,7 +5,7 @@ interface WebmunkUIDefinition {
   identifier:string
 }
 
-interface WebmunkConfiguration {
+export interface WebmunkConfiguration {
   ui: WebmunkUIDefinition[]
 }
 
