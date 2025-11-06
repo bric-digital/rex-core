@@ -6,7 +6,7 @@ export interface WebmunkUIDefinition {
 }
 
 export interface WebmunkConfiguration {
-  ui: WebmunkUIDefinition[]
+  ui:WebmunkUIDefinition[]
 }
 
 export class WebmunkExtensionModule {
