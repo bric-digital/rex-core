@@ -2,7 +2,8 @@ import $ from 'jquery'
 
 export interface WebmunkUIDefinition {
   title:string,
-  identifier:string
+  identifier:string,
+  depends_on:string[]
 }
 
 export interface WebmunkConfiguration {
@@ -23,9 +24,19 @@ export class WebmunkExtensionModule {
   setup() {
     console.log(`TODO: Implement in ${this.instantiationTarget}...`)
   }
+
+  async checkRequirement(requirement:string) { // eslint-disable-line @typescript-eslint/no-unused-vars
+    return new Promise<boolean>((resolve) => {
+      resolve(false)
+    })
+  }
+
+  activateInterface(uiDefinition:WebmunkUIDefinition):boolean { // eslint-disable-line @typescript-eslint/no-unused-vars
+    return false
+  }
 }
 
-const registeredExtensionModules = []
+const registeredExtensionModules:WebmunkExtensionModule[] = []
 
 export function registerWebmunkModule(webmunkModule:WebmunkExtensionModule) {
   console.log(`Register ${webmunkModule}`)
@@ -39,8 +50,9 @@ export function registerWebmunkModule(webmunkModule:WebmunkExtensionModule) {
 
 export const webmunkCorePlugin = {
   interface: {
-    identifier: null,
-    title: ''
+    identifier: '',
+    title: '',
+    depends_on: ['']
   },
   loadInitialConfigation: async function(configPath:string) {
     return new Promise<string>((resolve, reject) => {
@@ -75,7 +87,7 @@ export const webmunkCorePlugin = {
   },
   validateInterface: async function (uiDefinition:WebmunkUIDefinition) {
     return new Promise<void>((resolve, reject) => {
-      const requirements = []
+      const requirements:string[] = []
 
       if (uiDefinition['depends_on'] !== undefined) {
         requirements.push(...uiDefinition['depends_on'])
@@ -112,7 +124,9 @@ export const webmunkCorePlugin = {
     return new Promise<object>((resolve) => {
       chrome.runtime.sendMessage({
         'messageType': 'fetchConfiguration',
-      }).then((configuration:WebmunkConfiguration) => {
+      }).then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+        const configuration = response as WebmunkConfiguration
+
         console.log('configuration')
         console.log(configuration)
 
@@ -129,7 +143,9 @@ export const webmunkCorePlugin = {
   },
   refreshInterface: () => {
     webmunkCorePlugin.fetchCurrentInterface()
-      .then((uiDefinition:WebmunkUIDefinition) => {
+      .then((response:object) => {
+        const uiDefinition = response as WebmunkUIDefinition
+
         if (webmunkCorePlugin.interface.identifier !== uiDefinition.identifier) {
           webmunkCorePlugin.interface = uiDefinition
 
@@ -182,9 +198,9 @@ class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule {
     // None needed for default pass-through
   }
 
-  async validateIdentifier(identifier) {
+  async validateIdentifier(identifier:string) {
     return new Promise<string>((resolve, reject) => {
-      if ([null, undefined].includes(identifier) || identifier.length == 0) {
+      if (identifier.length == 0) {
         reject('Please provide a valid (non-empty) identifier')
       } else {
         resolve(identifier)
@@ -203,7 +219,7 @@ class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule {
       $('#coreSaveIdentifier').on('click', () => {
         const identifier = $('input[type="text"]').val()
 
-        me.validateIdentifier(identifier)
+        me.validateIdentifier(identifier as string)
           .then((finalIdentifier:string) => {
             webmunkCorePlugin.setIdentifier(finalIdentifier)
               .then(() => {
@@ -244,7 +260,7 @@ class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule {
             }
           })
       } else {
-        return resolve(false)
+        resolve(false)
       }
     })
   }

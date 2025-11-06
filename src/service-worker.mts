@@ -1,4 +1,4 @@
-import { WebmunkConfiguration } from "./extension.mts"
+import { type WebmunkConfiguration } from "./extension.mjs"
 
 export interface WebmunkConfigurationResponse {
   webmunkConfiguration:WebmunkConfiguration
@@ -33,9 +33,11 @@ const webmunkCorePlugin = {
     const optionsUrl = chrome.runtime.getURL('index.html')
 
     chrome.tabs.query({}, function (extensionTabs) {
-      for (let i = 0; i < extensionTabs.length; i++) {
-        if (optionsUrl === extensionTabs[i].url) {
-          chrome.windows.remove(extensionTabs[i].windowId)
+      if (extensionTabs !== undefined) {
+        for (const extensionTab of extensionTabs) {
+          if (optionsUrl === extensionTab.url) {
+            chrome.windows.remove(extensionTab.windowId)
+          }
         }
       }
 
@@ -64,7 +66,7 @@ const webmunkCorePlugin = {
       } else if (changeInfo.status === 'loading' && loadedScripts.has(`${tabId}-${tab.url}`) === false) {
         loadedScripts.add(`${tabId}-${tab.url}`)
 
-        if (tab.url.startsWith('https://') || tab.url.startsWith('http://')) {
+        if (tab.url !== undefined && (tab.url.startsWith('https://') || tab.url.startsWith('http://'))) {
           chrome.scripting.executeScript({
             target: {
             tabId: tabId,
@@ -80,7 +82,7 @@ const webmunkCorePlugin = {
 
     chrome.runtime.onMessage.addListener(webmunkCorePlugin.handleMessage)
   },
-  handleMessage: (message:any, sender:any, sendResponse:(response:any) => void): boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
+  handleMessage: (message:any, sender:any, sendResponse:(response:any) => void):boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
     if (message.messageType == 'loadInitialConfiguration') {
       webmunkCorePlugin.initializeConfiguration(message.configuration)
         .then((response:string) => {
@@ -92,8 +94,11 @@ const webmunkCorePlugin = {
 
     if (message.messageType === 'fetchConfiguration') {
       chrome.storage.local.get('webmunkConfiguration')
-        .then((response:WebmunkConfigurationResponse) => {
-          sendResponse(response.webmunkConfiguration)
+        .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+
+          const configResponse:WebmunkConfigurationResponse = response as WebmunkConfigurationResponse
+
+          sendResponse(configResponse.webmunkConfiguration)
         })
 
       return true
@@ -111,19 +116,23 @@ const webmunkCorePlugin = {
 
     if (message.messageType == 'getIdentifier') {
       chrome.storage.local.get('webmunkIdentifier')
-        .then((response:WebmunkIdentifierResponse) => {
-          sendResponse(response.webmunkIdentifier)
+        .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+          const idResponse:WebmunkIdentifierResponse = response as WebmunkIdentifierResponse
+          sendResponse(idResponse.webmunkIdentifier)
         })
 
       return true
     }
 
+    return false
   },
   initializeConfiguration: (configuration:WebmunkConfiguration): Promise<string> => {
     return new Promise((resolve) => {
       chrome.storage.local.get('webmunkConfiguration')
-        .then((response:WebmunkConfigurationResponse) => {
-          if (response.webmunkConfiguration !== undefined) {
+        .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+          const configResponse:WebmunkConfigurationResponse = response as WebmunkConfigurationResponse
+
+          if (configResponse.webmunkConfiguration !== undefined) {
             resolve('Error: Configuration already initialized.')
           } else {
             chrome.storage.local.set({

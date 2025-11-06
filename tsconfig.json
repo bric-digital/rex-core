@@ -1,15 +1,21 @@
 {
+  // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-    "module": "NodeNext",
-    "target": "es5",
-    "esModuleInterop": true,
-    "moduleResolution": "nodenext",
-    "sourceMap": true,
-    "outDir": "dist",
+    "outDir": "./dist",
+    "module": "nodenext",
+    "target": "esnext",
     "types": ["chrome-types", "jquery"],
-    "lib": ["es2015", "es2016", "dom"],
-  },
-  "include": [
-    "src/**/*"
-  ],
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "strict": true,
+    "jsx": "react-jsx",
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+  }
 }
