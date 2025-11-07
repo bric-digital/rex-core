@@ -93,7 +93,7 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
     }
 
     if (message.messageType === 'fetchConfiguration') {
-      webmunkCorePlugin.fetchConfigration()
+      webmunkCorePlugin.fetchConfiguration()
         .then((configuration:WebmunkConfiguration) => {
           sendResponse(configuration)
         })
@@ -140,7 +140,7 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
           }
         })
     })
-  }, fetchConfigration(): Promise<WebmunkConfiguration> {
+  }, fetchConfiguration(): Promise<WebmunkConfiguration> {
     return new Promise((resolve, reject) => {
       chrome.storage.local.get('webmunkConfiguration')
         .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
