@@ -8,7 +8,7 @@ export interface WebmunkIdentifierResponse {
   webmunkIdentifier:string
 }
 
-class WebmunkServiceWorkerModule {
+export class WebmunkServiceWorkerModule {
   instantiationTarget:string
 
   constructor() {
