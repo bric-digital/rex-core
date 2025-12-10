@@ -7,7 +7,8 @@ export interface WebmunkUIDefinition {
 }
 
 export interface WebmunkConfiguration {
-  ui:WebmunkUIDefinition[]
+  ui:WebmunkUIDefinition[],
+  configuration_url:String
 }
 
 export class WebmunkExtensionModule {
@@ -39,8 +40,6 @@ export class WebmunkExtensionModule {
 const registeredExtensionModules:WebmunkExtensionModule[] = []
 
 export function registerWebmunkModule(webmunkModule:WebmunkExtensionModule) {
-  console.log(`Register ${webmunkModule}`)
-
   if (!registeredExtensionModules.includes(webmunkModule)) {
     registeredExtensionModules.push(webmunkModule)
 
@@ -211,11 +210,40 @@ class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule {
 
   async validateIdentifier(identifier:string) {
     return new Promise<string>((resolve, reject) => {
-      if (identifier.length == 0) {
-        reject('Please provide a valid (non-empty) identifier')
-      } else {
-        resolve(identifier)
-      }
+      chrome.runtime.sendMessage({
+        'messageType': 'fetchConfiguration',
+      }).then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+        const configuration = response as WebmunkConfiguration
+
+        console.log('configuration')
+        console.log(configuration)
+
+        const configUrlStr = configuration['configuration_url'] as String
+
+        const configUrl:URL = new URL(configUrlStr.replaceAll('<IDENTIFIER>', identifier))
+
+        fetch(configUrl)
+          .then((response: Response) => {
+            if (response.ok) {
+              response.json().then((jsonData:WebmunkConfiguration) => {
+                chrome.runtime.sendMessage({
+                  'messageType': 'loadInitialConfiguration',
+                  'configuration': jsonData
+                }).then((response: string) => {
+                  if (response.toLowerCase().startsWith('error')) {
+                    reject(`Received error from service worker: ${response}`)
+                  } else {
+                    resolve(identifier)
+                  }
+                })
+              })
+          } else {
+            reject(`Received error status: ${response.statusText}`)
+          }
+        }, (reason:string) => {
+          reject(`${reason}`)
+        })
+      })
     })
   }
 
@@ -244,9 +272,6 @@ class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule {
       chrome.runtime.sendMessage({
         'messageType': 'getIdentifier'
       }).then((identifier:string) => {
-        console.log('getIdentifier')
-        console.log(identifier)
-
         $('input[type="text"]').val(identifier)
       })
 
