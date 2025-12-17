@@ -163,6 +163,7 @@ export const webmunkCorePlugin = {
       .then((response: Response) => {
         if (response.ok) {
           response.text().then((htmlText:string) => {
+            let activated = false
 
             if (contentElement !== null) {
               contentElement.innerHTML = htmlText
@@ -170,11 +171,13 @@ export const webmunkCorePlugin = {
 
             for (const extensionModule of registeredExtensionModules) {
               if (extensionModule.activateInterface !== undefined) {
-                extensionModule.activateInterface(uiDefinition)
+                if (extensionModule.activateInterface(uiDefinition)) {
+                  activated = true
+                }
               }
             }
 
-            if (contentElement !== null) {
+            if (activated === false && contentElement !== null) {
               contentElement.innerHTML = `Unable to find module to activate ${templateUrl}...`
             }
           })
