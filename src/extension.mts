@@ -170,9 +170,7 @@ export const webmunkCorePlugin = {
 
             for (const extensionModule of registeredExtensionModules) {
               if (extensionModule.activateInterface !== undefined) {
-                if (extensionModule.activateInterface(uiDefinition)) {
-                  return
-                }
+                extensionModule.activateInterface(uiDefinition)
               }
             }
 
