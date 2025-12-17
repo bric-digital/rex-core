@@ -28,6 +28,10 @@ export class WebmunkServiceWorkerModule {
 
     }
   }
+
+  moduleName() {
+    return 'WebmunkServiceWorkerModule'
+  }
 }
 
 const registeredExtensionModules:WebmunkServiceWorkerModule[] = []
@@ -143,13 +147,13 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
     }
 
     if (message.messageType == 'logEvent') {
-      console.log(`[webmunk-core] logEvent`)
+      console.log(`[webmunk-core] logEvent -- ${registeredExtensionModules.length}`)
       console.log(message.event)
 
       // message.event = { name:string, ... }
 
       for (const extensionModule of registeredExtensionModules) {
-        console.log(`TRY ${extensionModule.instantiationTarget}`)
+        console.log(`TRY ${extensionModule.moduleName()}`)
         console.log(extensionModule.logEvent)
 
         if (extensionModule.logEvent !== undefined) {
