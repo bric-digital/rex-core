@@ -37,10 +37,12 @@ export class WebmunkServiceWorkerModule {
 const registeredExtensionModules:WebmunkServiceWorkerModule[] = []
 
 export function registerWebmunkModule(webmunkModule:WebmunkServiceWorkerModule) {
+  console.log(`Registering ${webmunkModule.moduleName()}...`)
   if (!registeredExtensionModules.includes(webmunkModule)) {
     registeredExtensionModules.push(webmunkModule)
 
     webmunkModule.setup()
+    console.log(`Registered ${webmunkModule.moduleName()}!`)
   }
 }
 
