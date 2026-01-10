@@ -277,9 +277,9 @@ test.describe('List Utilities - Pattern Matching', () => {
   test('should match subdomain wildcard pattern', async ({ page }) => {
     const results = await page.evaluate(() => {
       return {
-        exactMatch: window.ListUtilities.matchesPattern('https://google.com', '^https?://([a-z0-9-]+\\\\.)*google\\\\.com(/|$)', 'regex'),
-        subdomainMatch: window.ListUtilities.matchesPattern('https://mail.google.com', '^https?://([a-z0-9-]+\\\\.)*google\\\\.com(/|$)', 'regex'),
-        noMatch: window.ListUtilities.matchesPattern('https://facebook.com', '^https?://([a-z0-9-]+\\\\.)*google\\\\.com(/|$)', 'regex')
+        exactMatch: window.ListUtilities.matchesPattern('https://google.com', '^https?://([a-z0-9-]+\\.)*google\\.com(/|$)', 'regex'),
+        subdomainMatch: window.ListUtilities.matchesPattern('https://mail.google.com', '^https?://([a-z0-9-]+\\.)*google\\.com(/|$)', 'regex'),
+        noMatch: window.ListUtilities.matchesPattern('https://facebook.com', '^https?://([a-z0-9-]+\\.)*google\\.com(/|$)', 'regex')
       };
     });
 
