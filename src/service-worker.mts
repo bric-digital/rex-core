@@ -32,6 +32,10 @@ export class WebmunkServiceWorkerModule {
   moduleName() {
     return 'WebmunkServiceWorkerModule'
   }
+
+  handleMessage(message:any, sender:any, sendResponse:(response:any) => void):boolean {
+    return false
+  }
 }
 
 const registeredExtensionModules:WebmunkServiceWorkerModule[] = []
@@ -158,6 +162,36 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
       return true
     }
 
+    if (message.messageType == 'openWindow') {
+      const optionsUrl = chrome.runtime.getURL('index.html')
+
+      chrome.tabs.query({})
+        .then((extensionTabs:chrome.tabs.Tab[]) => {
+          for (let i = 0; i < extensionTabs.length; i++) {
+            const extensionTab = extensionTabs[i]
+
+            if (extensionTab !== undefined) {
+              if (optionsUrl === extensionTab.url) {
+                chrome.windows.remove(extensionTab.windowId)
+              }
+            }
+          }
+
+          chrome.windows.create({
+            height: 480,
+            width: 640,
+            type: 'panel',
+            url: chrome.runtime.getURL('index.html')
+          }).then((newWindow:chrome.windows.Window | undefined) => {
+            if (newWindow !== undefined) {
+              sendResponse(newWindow.id)
+            }
+          })
+        })
+
+      return true
+    }
+
     if (message.messageType == 'logEvent') {
       // message.event = { name:string, ... }
 
@@ -170,7 +204,17 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
       return true
     }
 
-    return false
+    let handled:boolean = false
+
+    for (const extensionModule of registeredExtensionModules) {
+      if (extensionModule.handleMessage !== undefined) {
+        if (extensionModule.handleMessage(message, sender, sendResponse)) {
+          handled = true
+        }
+      }
+    }
+
+    return handled
   },
   initializeConfiguration: (configuration:WebmunkConfiguration): Promise<string> => {
     return new Promise((resolve) => {
