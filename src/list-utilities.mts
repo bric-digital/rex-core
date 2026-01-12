@@ -75,7 +75,10 @@ function isStrictRegisteredDomain(pattern: string): boolean {
 // ============================================================================
 
 const DB_NAME = 'webmunk_lists'
-const DB_VERSION = 1
+// v2: uniqueness is (list_name, pattern_type, domain). This allows multiple entries
+// with the same "domain" string in a list when their semantics differ by pattern_type
+// (e.g. 'domain' vs 'host'), and fixes collisions for non-domain patterns.
+const DB_VERSION = 2
 const STORE_NAME = 'list_entries'
 
 // ============================================================================
@@ -103,20 +106,50 @@ export async function initializeListDatabase(): Promise<IDBDatabase> {
 
       // Create object store if it doesn't exist
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const objectStore = db.createObjectStore(STORE_NAME, {
+        db.createObjectStore(STORE_NAME, {
           keyPath: 'id',
           autoIncrement: true
         })
-
-        // Create indexes
-        objectStore.createIndex('list_name', 'list_name', { unique: false })
-        objectStore.createIndex('domain', 'domain', { unique: false })
-        objectStore.createIndex('source', 'source', { unique: false })
-        objectStore.createIndex('list_name_domain', ['list_name', 'domain'], { unique: true })
-        objectStore.createIndex('list_name_source', ['list_name', 'source'], { unique: false })
-
-        console.log('[list-utilities] Created object store and indexes')
       }
+
+      // Ensure indexes exist / match expected uniqueness.
+      // Note: during upgrades, we can safely recreate indexes in-place.
+      const transaction = (event.target as IDBOpenDBRequest).transaction
+      if (!transaction) return
+      const objectStore = transaction.objectStore(STORE_NAME)
+
+      // Basic indexes
+      if (!objectStore.indexNames.contains('list_name')) {
+        objectStore.createIndex('list_name', 'list_name', { unique: false })
+      }
+      if (!objectStore.indexNames.contains('domain')) {
+        objectStore.createIndex('domain', 'domain', { unique: false })
+      }
+      if (!objectStore.indexNames.contains('source')) {
+        objectStore.createIndex('source', 'source', { unique: false })
+      }
+      if (!objectStore.indexNames.contains('list_name_source')) {
+        objectStore.createIndex('list_name_source', ['list_name', 'source'], { unique: false })
+      }
+
+      // Compound indexes:
+      // - list_name_domain: non-unique helper index (legacy + convenience queries)
+      // - list_name_pattern_type_domain: unique index enforcing per-pattern uniqueness
+      if (objectStore.indexNames.contains('list_name_domain')) {
+        objectStore.deleteIndex('list_name_domain')
+      }
+      objectStore.createIndex('list_name_domain', ['list_name', 'domain'], { unique: false })
+
+      if (objectStore.indexNames.contains('list_name_pattern_type_domain')) {
+        objectStore.deleteIndex('list_name_pattern_type_domain')
+      }
+      objectStore.createIndex(
+        'list_name_pattern_type_domain',
+        ['list_name', 'pattern_type', 'domain'],
+        { unique: true }
+      )
+
+      console.log('[list-utilities] Ensured object store and indexes')
     }
   })
 }
@@ -407,7 +440,35 @@ export async function findListEntry(listName: string, domain: string): Promise<L
     const transaction = db.transaction(STORE_NAME, 'readonly')
     const store = transaction.objectStore(STORE_NAME)
     const index = store.index('list_name_domain')
-    const request = index.get([listName, domain])
+    const request = index.getAll([listName, domain])
+
+    request.onsuccess = () => {
+      const results = request.result
+      resolve(Array.isArray(results) && results.length > 0 ? results[0] : null)
+    }
+
+    request.onerror = () => {
+      reject(new Error(`Failed to find entry: ${request.error?.message}`))
+    }
+  })
+}
+
+/**
+ * Find a specific entry in a list by (pattern_type, domain/pattern).
+ * This is the schema-level uniqueness key.
+ */
+export async function findListEntryByPattern(
+  listName: string,
+  patternType: PatternType,
+  domain: string
+): Promise<ListEntry | null> {
+  const db = await getDatabase()
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readonly')
+    const store = transaction.objectStore(STORE_NAME)
+    const index = store.index('list_name_pattern_type_domain')
+    const request = index.get([listName, patternType, domain])
 
     request.onsuccess = () => {
       resolve(request.result || null)
@@ -637,22 +698,26 @@ export async function mergeBackendList(listName: string, entries: any[]): Promis
 
   // 1b. Ensure uniqueness constraints won't fail when inserting backend entries.
   //
-  // Our IndexedDB schema enforces a unique compound index on (list_name, domain) across ALL sources.
-  // That means a user-created entry (or a previously imported/generated entry) with the same domain
-  // would cause backend sync to fail with:
-  //   Unable to add key to index 'list_name_domain': ... uniqueness requirements.
+  // Our IndexedDB schema enforces a unique compound index on (list_name, pattern_type, domain) across ALL sources.
+  // That means a user-created entry (or a previously imported/generated entry) with the same
+  // (pattern_type, domain) would cause backend sync to fail with a uniqueness error.
   //
   // For backend-first sync, we resolve conflicts by removing any existing entry with the same
-  // (list_name, domain) before inserting the backend-provided version.
+  // (list_name, pattern_type, domain) before inserting the backend-provided version.
   for (const entry of entries) {
     try {
       const domain = entry?.domain
+      const patternType = entry?.pattern_type as PatternType | undefined
       if (typeof domain !== 'string' || domain.length === 0) continue
+      if (!patternType) continue
 
-      const existing = await findListEntry(listName, domain)
+      const existing = await findListEntryByPattern(listName, patternType, domain)
       if (existing?.id !== undefined) {
         await deleteListEntry(existing.id)
-        console.log(`[list-utilities] Removed conflicting existing entry for ${listName}:${domain} (source=${existing.source ?? 'unknown'})`)
+        console.log(
+          `[list-utilities] Removed conflicting existing entry for ${listName}:${patternType}:${domain} ` +
+          `(source=${existing.source ?? 'unknown'})`
+        )
       }
     } catch (error) {
       console.error(`[list-utilities] Failed resolving conflict for list ${listName}:`, error)

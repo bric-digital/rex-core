@@ -33,6 +33,7 @@ test.describe('List Utilities - Database Initialization', () => {
         hasListNameIndex: store.indexNames.contains('list_name'),
         hasDomainIndex: store.indexNames.contains('domain'),
         hasCompoundIndex: store.indexNames.contains('list_name_domain'),
+        hasUniquePatternIndex: store.indexNames.contains('list_name_pattern_type_domain'),
         keyPath: store.keyPath,
         autoIncrement: store.autoIncrement
       };
@@ -41,6 +42,7 @@ test.describe('List Utilities - Database Initialization', () => {
     expect(storeInfo.hasListNameIndex).toBe(true);
     expect(storeInfo.hasDomainIndex).toBe(true);
     expect(storeInfo.hasCompoundIndex).toBe(true);
+    expect(storeInfo.hasUniquePatternIndex).toBe(true);
     expect(storeInfo.keyPath).toBe('id');
     expect(storeInfo.autoIncrement).toBe(true);
   });
@@ -456,6 +458,51 @@ test.describe('List Utilities - Error Handling', () => {
 
     expect(error).toBeTruthy();
     expect(error).toContain('Failed to create entry');
+  });
+
+  test('should allow same domain string with different pattern types', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      await window.ListUtilities.createListEntry({
+        list_name: 'mixed-patterns',
+        domain: 'example.com',
+        pattern_type: 'domain',
+        metadata: {}
+      });
+
+      await window.ListUtilities.createListEntry({
+        list_name: 'mixed-patterns',
+        domain: 'example.com',
+        pattern_type: 'host',
+        metadata: {}
+      });
+
+      const entries = await window.ListUtilities.getListEntries('mixed-patterns');
+      return entries.map(e => e.pattern_type).sort();
+    });
+
+    expect(result).toEqual(['domain', 'host']);
+  });
+
+  test('should allow multiple regex patterns in the same list', async ({ page }) => {
+    const count = await page.evaluate(async () => {
+      await window.ListUtilities.createListEntry({
+        list_name: 'regex-list',
+        domain: '.*(tiktok|snapchat).*',
+        pattern_type: 'regex',
+        metadata: {}
+      });
+
+      await window.ListUtilities.createListEntry({
+        list_name: 'regex-list',
+        domain: '^https?://([a-z0-9-]+\\\\.)*(porn|pron|xxx)(/|$)',
+        pattern_type: 'regex',
+        metadata: {}
+      });
+
+      return (await window.ListUtilities.getListEntries('regex-list')).length;
+    });
+
+    expect(count).toBe(2);
   });
 
   test('should handle invalid regex patterns gracefully', async ({ page }) => {
