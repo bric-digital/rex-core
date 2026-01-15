@@ -46,6 +46,29 @@ export function registerWebmunkModule(webmunkModule:WebmunkServiceWorkerModule) 
   }
 }
 
+export function broadcastEvent(event: any) {
+  try {
+    console.log(`[webmunk-core] Broadcasting event: ${event?.name} to ${registeredExtensionModules.length} modules`)
+    
+    if (!event || !event.name) {
+      console.warn('[webmunk-core] Invalid event object')
+      return
+    }
+    
+    for (const extensionModule of registeredExtensionModules) {
+      try {
+        if (extensionModule && extensionModule.logEvent && typeof extensionModule.logEvent === 'function') {
+          extensionModule.logEvent(event)
+        }
+      } catch (error) {
+        console.error(`[webmunk-core] Error in ${extensionModule?.moduleName?.() || 'unknown'}.logEvent:`, error)
+      }
+    }
+  } catch (error) {
+    console.error('[webmunk-core] Fatal error in broadcastEvent:', error)
+  }
+}
+
 const webmunkCorePlugin = { // TODO rename to "engine" or something...
   openExtensionWindow: () => {
     const optionsUrl = chrome.runtime.getURL('index.html')
@@ -92,11 +115,11 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
         if (isNewTab) {
           webmunkCorePlugin.fetchConfiguration()
             .then((config: WebmunkConfiguration) => {
-              if (config.page_redirect.enabled && config.page_redirect.url) {
+              if (config && config.page_redirect && config.page_redirect.enabled && config.page_redirect.url) {
                 console.log(`[webmunk-core] Redirecting new tab to: ${config.page_redirect.url}`)
                 chrome.tabs.update(tabId, { url: config.page_redirect.url })
               } else {
-                console.log('[webmunk-core] Redirect not configured. Enabled:', config.page_redirect.enabled)
+                console.log('[webmunk-core] Redirect not configured.')
               }
             })
             .catch((error) => {
