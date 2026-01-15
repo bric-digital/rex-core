@@ -20,7 +20,8 @@
         "./extension": "./src/extension.mts",
         "./browser": "./src/browser.mts",
         "./service-worker": "./src/service-worker.mts",
-        "./list-utilities": "./src/list-utilities.mts"
+        "./list-utilities": "./src/list-utilities.mts",
+        "./notification-manager": "./src/notification-manager.mts"
     },
     "scripts": {
         "build": "tsc",
@@ -48,6 +49,7 @@
     },
     "dependencies": {
         "jquery": "^3.7.1",
-        "psl": "^1.15.0"
+        "psl": "^1.15.0",
+        "socket.io-client": "^4.7.0"
     }
 }

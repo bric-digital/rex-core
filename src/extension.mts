@@ -18,6 +18,11 @@ export interface WebmunkConfiguration {
   redirect_on_install?:{
     enabled:boolean,
     url:string
+  },
+  messageRefreshIntervalMinutes?:number,
+  page_redirect?:{
+    enabled:boolean,
+    url:string
   }
 }
 
@@ -368,8 +373,12 @@ class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule {
 
       chrome.runtime.sendMessage({
         'messageType': 'getIdentifier'
-      }).then((identifier:string) => {
-        $('#inputIdentifier').val(identifier)
+      }).then((response: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+        // Response might be a string or an object containing the identifier
+        const identifier = typeof response === 'string' ? response : (response?.identifier || response?.webmunkIdentifier || '')
+        if (identifier && identifier.length > 0) {
+          $('#inputIdentifier').val(identifier)
+        }
       })
 
       return true

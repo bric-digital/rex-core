@@ -103,12 +103,15 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
     chrome.tabs.query({}, function (extensionTabs) {
       if (extensionTabs !== undefined) {
         for (const extensionTab of extensionTabs) {
-          if (optionsUrl === extensionTab.url) {
-            chrome.windows.remove(extensionTab.windowId)
+          if (optionsUrl === extensionTab.url && extensionTab.windowId) {
+            // Focus existing window instead of closing and recreating
+            chrome.windows.update(extensionTab.windowId, { focused: true })
+            return
           }
         }
       }
 
+      // Only create new window if one doesn't exist
       chrome.windows.create({
         height: 480,
         width: 640,
