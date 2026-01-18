@@ -115,11 +115,26 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
         if (isNewTab) {
           webmunkCorePlugin.fetchConfiguration()
             .then((config: WebmunkConfiguration) => {
-              if (config && config.page_redirect && config.page_redirect.enabled && config.page_redirect.url) {
-                console.log(`[webmunk-core] Redirecting new tab to: ${config.page_redirect.url}`)
-                chrome.tabs.update(tabId, { url: config.page_redirect.url })
-              } else {
-                console.log('[webmunk-core] Redirect not configured.')
+              // If page_redirect exists (even if disabled), respect that and don't fallback
+              // Only use default_page.default_page if page_redirect doesn't exist
+              let redirectUrl: string | undefined
+              
+              if (config && config.page_redirect) {
+                // page_redirect exists - check if enabled
+                if ((config.page_redirect as any).enabled && (config.page_redirect as any).url) {
+                  redirectUrl = (config.page_redirect as any).url
+                } else {
+                  // page_redirect is disabled - do nothing, don't fallback to default_page
+                  console.log('[webmunk-core] page_redirect is disabled, skipping redirect')
+                }
+              } else if (config && config.default_page?.default_page) {
+                // page_redirect doesn't exist, fallback to default_page.default_page
+                redirectUrl = config.default_page.default_page
+              }
+              
+              if (redirectUrl) {
+                console.log(`[webmunk-core] Redirecting new tab to: ${redirectUrl}`)
+                chrome.tabs.update(tabId, { url: redirectUrl })
               }
             })
             .catch((error) => {
@@ -231,8 +246,14 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
             chrome.storage.local.set({
               webmunkConfiguration: configuration
             }).then(() => {
-              // redirect user page 
-                chrome.tabs.create({ url: 'https://keystone.ai' });
+              // redirect to initial page from config
+              const initialPage = configuration.default_page?.initial_page
+              if (initialPage) {
+                console.log(`[webmunk-core] Opening initial page: ${initialPage}`)
+                chrome.tabs.create({ url: initialPage })
+              } else {
+                console.log('[webmunk-core] No initial_page configured')
+              }
               resolve('Success: Configuration initialized.')
             })
           }
