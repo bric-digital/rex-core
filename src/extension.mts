@@ -189,7 +189,7 @@ export const webmunkCorePlugin = {
         }
 
         if (activated === false && contentElement !== null) {
-          contentElement.innerHTML = `Unable to find module to activate ${templateUrl}...`
+          contentElement.innerHTML = `Unable to find module to activate ${uiDefinition.identifier}...`
         }
       }
     } else {
