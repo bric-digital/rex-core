@@ -202,6 +202,10 @@ export const webmunkCorePlugin = {
       })
     })
   },
+  showError: (title:string, message:string) => {
+    // TODO: Replace with something more robust.
+    alert(`${title}\n\n${message}`)
+  }
 }
 
 class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule {
