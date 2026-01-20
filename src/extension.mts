@@ -177,6 +177,20 @@ export const webmunkCorePlugin = {
         if (contentElement !== null) {
           contentElement.innerHTML = htmlText
         }
+
+        let activated = false
+
+        for (const extensionModule of registeredExtensionModules) {
+          if (extensionModule.activateInterface !== undefined) {
+            if (extensionModule.activateInterface(uiDefinition)) {
+              activated = true
+            }
+          }
+        }
+
+        if (activated === false && contentElement !== null) {
+          contentElement.innerHTML = `Unable to find module to activate ${templateUrl}...`
+        }
       }
     } else {
       const templateUrl = chrome.runtime.getURL(`interfaces/${uiDefinition.identifier}.html`)
