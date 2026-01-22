@@ -56,13 +56,26 @@ export function registerWebmunkModule(webmunkModule:WebmunkServiceWorkerModule) 
   }
 }
 
-export function dispatchEvent(event: { name: string; [key: string]: unknown }) {
-  console.log(`[webmunk-core] dispatchEvent: ${event.name} -- ${registeredExtensionModules.length} modules`)
-
-  for (const extensionModule of registeredExtensionModules) {
-    if (extensionModule.logEvent !== undefined) {
-      extensionModule.logEvent(event)
+export function broadcastEvent(event: { name: string; [key: string]: unknown }) {
+  try {
+    console.log(`[webmunk-core] Broadcasting event: ${event?.name} to ${registeredExtensionModules.length} modules`)
+    
+    if (!event || !event.name) {
+      console.warn('[webmunk-core] Invalid event object')
+      return
     }
+    
+    for (const extensionModule of registeredExtensionModules) {
+      try {
+        if (extensionModule && extensionModule.logEvent && typeof extensionModule.logEvent === 'function') {
+          extensionModule.logEvent(event)
+        }
+      } catch (error) {
+        console.error(`[webmunk-core] Error in ${extensionModule?.moduleName?.() || 'unknown'}.logEvent:`, error)
+      }
+    }
+  } catch (error) {
+    console.error('[webmunk-core] Fatal error in broadcastEvent:', error)
   }
 }
 
