@@ -245,7 +245,7 @@ export const webmunkCorePlugin = {
   }
 }
 
-class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule {
+export class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule {
   setup() {
     // None needed for default pass-through
   }
@@ -295,14 +295,12 @@ class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule {
     console.log('activateInterface')
     console.log(uiDefinition)
 
-    const me = this  // eslint-disable-line @typescript-eslint/no-this-alias
-
     if (uiDefinition.identifier == 'identifier') {
       $('#coreSaveIdentifier').off('click')
       $('#coreSaveIdentifier').on('click', () => {
         const identifier = $('input[type="text"]').val()
 
-        me.validateIdentifier(identifier as string)
+        this.validateIdentifier(identifier as string)
           .then((finalIdentifier:string) => {
             webmunkCorePlugin.setIdentifier(finalIdentifier)
               .then(() => {
