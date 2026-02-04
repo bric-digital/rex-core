@@ -12,4 +12,8 @@ test.describe('REX Core', () => {
 
     await page.waitForTimeout(100); // Give time for DB to clear
   });
+
+  test('Validate page loaded.', async ({ page }) => {
+    await expect(page).toHaveTitle(/REX Core Test Page/);
+  });
 });
