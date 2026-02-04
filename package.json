@@ -19,8 +19,7 @@
     "exports": {
         "./extension": "./src/extension.mts",
         "./browser": "./src/browser.mts",
-        "./service-worker": "./src/service-worker.mts",
-        "./list-utilities": "./src/list-utilities.mts"
+        "./service-worker": "./src/service-worker.mts"
     },
     "scripts": {
         "build": "tsc",
