@@ -18,6 +18,6 @@ export class REXClientModule {
   }
 }
 
-export function registerREXkModule(rexModule:REXClientModule) {
+export function registerREXModule(rexModule:REXClientModule) {
   rexModule.setup()
 }
