@@ -37,7 +37,7 @@ export class REXExtensionModule {
     return false
   }
 
-  fetchHtmlInterface(identifier:string):string|null {
+  fetchHtmlInterface(identifier:string):string|null { // eslint-disable-line @typescript-eslint/no-unused-vars
     return null
   }
 }

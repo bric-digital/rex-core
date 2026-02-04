@@ -33,7 +33,7 @@ export class REXServiceWorkerModule {
     return 'REXServiceWorkerModule'
   }
 
-  handleMessage(message:any, sender:any, sendResponse:(response:any) => void):boolean {
+  handleMessage(message:any, sender:any, sendResponse:(response:any) => void):boolean { // eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
     return false
   }
 
@@ -45,7 +45,7 @@ export class REXServiceWorkerModule {
     // Can be overridden by subclasses to activate latest configurations...
   }
 
-  configurationDetails():any {
+  configurationDetails():any {// eslint-disable-line @typescript-eslint/no-explicit-any
     return {
       module_name: {
         enabled: 'Boolean, true if module is active, false otherwise.',
@@ -178,7 +178,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
                       console.log(jsonData)
 
                       rexCorePlugin.updateConfiguration(jsonData)
-                        .then((response:string) => {
+                        .then((response:string) => { // eslint-disable-line @typescript-eslint/no-unused-vars
                           for (const extensionModule of registeredExtensionModules) {
                             extensionModule.refreshConfiguration()
                           }
