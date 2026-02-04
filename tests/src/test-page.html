@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webmunk List Utilities Test Page</title>
+    <title>REX Core Test Page</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -31,27 +31,12 @@
     </style>
 </head>
 <body>
-    <h1>🧪 Webmunk List Utilities Test Page</h1>
+    <h1>🧪 REX Core Test Page</h1>
     <div id="status">Loading test utilities...</div>
 
     <script type="module">
         // Import the bundled list utilities
-        import * as ListUtilities from './build/list-utilities.bundle.js';
 
-        // Expose to window for Playwright
-        window.ListUtilities = ListUtilities;
-
-        // Helper function to clear database
-        window.clearDatabase = async function() {
-            const dbs = await indexedDB.databases();
-            for (const db of dbs) {
-                if (db.name === 'webmunk_lists') {
-                    indexedDB.deleteDatabase(db.name);
-                }
-            }
-        };
-
-        // Set ready status
         document.getElementById('status').textContent = '✅ Test utilities loaded and ready';
         document.getElementById('status').className = 'ready';
 

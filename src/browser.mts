@@ -1,8 +1,8 @@
-export class WebmunkClientModule {
+export class REXClientModule {
   instantiationTarget:string
 
   constructor() {
-    if (new.target === WebmunkClientModule) {
+    if (new.target === REXClientModule) {
       throw new Error('Cannot be instantiated')
     }
 
@@ -10,14 +10,14 @@ export class WebmunkClientModule {
   }
 
   setup() {
-    console.log(`TODO: Implement in ${this.instantiationTarget}...`)
+    console.log(`[REXClientModule] TODO: Implement in ${this.instantiationTarget}...`)
   }
 
   toString():string {
-    return 'WebmunkClientModule (overrride in subclasses)'
+    return 'REXClientModule (overrride in subclasses)'
   }
 }
 
-export function registerWebmunkModule(webmunkModule:WebmunkClientModule) {
-  webmunkModule.setup()
+export function registerREXkModule(rexModule:REXClientModule) {
+  rexModule.setup()
 }

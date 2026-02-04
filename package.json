@@ -1,20 +1,20 @@
 {
-    "name": "@bric/webmunk-core",
+    "name": "@bric/rex-core",
     "version": "0.0.1",
-    "description": "Core Webmunk module providing services to other Webmunk modules.",
+    "description": "Core REX module providing services to other REX modules.",
     "keywords": [
         "extension",
-        "webmunk"
+        "rex"
     ],
     "author": "Behavioral Research Innovation Center",
     "type": "module",
-    "homepage": "https://github.com/bric-digital/webmunk-core",
+    "homepage": "https://github.com/bric-digital/rex-core",
     "bugs": {
-        "url": "https://github.com/bric-digital/webmunk-core/issues"
+        "url": "https://github.com/bric-digital/rex-core/issues"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/bric-digital/webmunk-core.git"
+        "url": "git+https://github.com/bric-digital/rex-core.git"
     },
     "exports": {
         "./extension": "./src/extension.mts",

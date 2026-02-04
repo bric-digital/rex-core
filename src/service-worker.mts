@@ -1,18 +1,18 @@
-import { type WebmunkConfiguration } from "./extension.mjs"
+import { type REXConfiguration } from "./extension.mjs"
 
-export interface WebmunkConfigurationResponse {
-  webmunkConfiguration:WebmunkConfiguration
+export interface REXConfigurationResponse {
+  REXConfiguration:REXConfiguration
 }
 
-export interface WebmunkIdentifierResponse {
-  webmunkIdentifier:string
+export interface REXIdentifierResponse {
+  rexIdentifier:string
 }
 
-export class WebmunkServiceWorkerModule {
+export class REXServiceWorkerModule {
   instantiationTarget:string
 
   constructor() {
-    if (new.target === WebmunkServiceWorkerModule) {
+    if (new.target === REXServiceWorkerModule) {
       throw new Error('Cannot be instantiated')
     }
 
@@ -25,12 +25,12 @@ export class WebmunkServiceWorkerModule {
 
   logEvent(event:object) {
     if (event !== undefined) {
-      console.log('WebmunkServiceWorkerModule: implement "logEvent" in subclass...')
+      console.log('REXServiceWorkerModule: implement "logEvent" in subclass...')
     }
   }
 
   moduleName() {
-    return 'WebmunkServiceWorkerModule'
+    return 'REXServiceWorkerModule'
   }
 
   handleMessage(message:any, sender:any, sendResponse:(response:any) => void):boolean {
@@ -55,19 +55,17 @@ export class WebmunkServiceWorkerModule {
   }
 }
 
-const registeredExtensionModules:WebmunkServiceWorkerModule[] = []
+const registeredExtensionModules:REXServiceWorkerModule[] = []
 
-export function registerWebmunkModule(webmunkModule:WebmunkServiceWorkerModule) {
-  if (!registeredExtensionModules.includes(webmunkModule)) {
-    registeredExtensionModules.push(webmunkModule)
+export function registerREXModule(rexModule:REXServiceWorkerModule) {
+  if (!registeredExtensionModules.includes(rexModule)) {
+    registeredExtensionModules.push(rexModule)
 
-    webmunkModule.setup()
+    rexModule.setup()
   }
 }
 
 export function dispatchEvent(event: { name: string; [key: string]: unknown }) {
-  console.log(`[webmunk-core] dispatchEvent: ${event.name} -- ${registeredExtensionModules.length} modules`)
-
   for (const extensionModule of registeredExtensionModules) {
     if (extensionModule.logEvent !== undefined) {
       extensionModule.logEvent(event)
@@ -75,7 +73,7 @@ export function dispatchEvent(event: { name: string; [key: string]: unknown }) {
   }
 }
 
-const webmunkCorePlugin = { // TODO rename to "engine" or something...
+const rexCorePlugin = { // TODO rename to "engine" or something...
   openExtensionWindow: () => {
     const optionsUrl = chrome.runtime.getURL('index.html')
 
@@ -98,11 +96,11 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
   },
   setup: () => {
     chrome.runtime.onInstalled.addListener(function (details:object) { // eslint-disable-line @typescript-eslint/no-unused-vars
-      webmunkCorePlugin.openExtensionWindow()
+      rexCorePlugin.openExtensionWindow()
     })
 
     chrome.action.onClicked.addListener(function (tab) { // eslint-disable-line @typescript-eslint/no-unused-vars
-      webmunkCorePlugin.openExtensionWindow()
+      rexCorePlugin.openExtensionWindow()
     })
 
     const loadedScripts = new Set()
@@ -121,17 +119,17 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
             },
             files: ['/js/browser/bundle.js']
           }, function (result) { // eslint-disable-line @typescript-eslint/no-unused-vars
-            console.log('[webmunk-core] Content script loaded.')
+            console.log('[rex-core] Content script loaded.')
           })
         }
       }
     })
 
-    chrome.runtime.onMessage.addListener(webmunkCorePlugin.handleMessage)
+    chrome.runtime.onMessage.addListener(rexCorePlugin.handleMessage)
   },
   handleMessage: (message:any, sender:any, sendResponse:(response:any) => void):boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
     if (message.messageType == 'loadInitialConfiguration') {
-      webmunkCorePlugin.initializeConfiguration(message.configuration)
+      rexCorePlugin.initializeConfiguration(message.configuration)
         .then((response:string) => {
           sendResponse(response)
         })
@@ -140,7 +138,7 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
     }
 
     if (message.messageType == 'updateConfiguration') {
-      webmunkCorePlugin.updateConfiguration(message.configuration)
+      rexCorePlugin.updateConfiguration(message.configuration)
         .then((response:string) => {
           sendResponse(response)
         })
@@ -149,8 +147,8 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
     }
 
     if (message.messageType === 'fetchConfiguration') {
-      webmunkCorePlugin.fetchConfiguration()
-        .then((configuration:WebmunkConfiguration) => {
+      rexCorePlugin.fetchConfiguration()
+        .then((configuration:REXConfiguration) => {
           sendResponse(configuration)
         })
 
@@ -158,15 +156,15 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
     }
 
     if (message.messageType === 'refreshConfiguration') {
-      webmunkCorePlugin.fetchConfiguration()
-        .then((configuration:WebmunkConfiguration) => {
-          console.log('[webmunk-core] Fetched configuration:')
+      rexCorePlugin.fetchConfiguration()
+        .then((configuration:REXConfiguration) => {
+          console.log('[rex-core] Fetched configuration:')
           console.log(configuration)
 
-          chrome.storage.local.get('webmunkIdentifier')
+          chrome.storage.local.get('rexIdentifier')
             .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-              const idResponse:WebmunkIdentifierResponse = response as WebmunkIdentifierResponse
-              const identifier = idResponse.webmunkIdentifier
+              const idResponse:REXIdentifierResponse = response as REXIdentifierResponse
+              const identifier = idResponse.rexIdentifier
 
               const configUrlStr = configuration['configuration_url'] as string
 
@@ -175,11 +173,11 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
               fetch(configUrl)
                 .then((response: Response) => {
                   if (response.ok) {
-                    response.json().then((jsonData:WebmunkConfiguration) => {
+                    response.json().then((jsonData:REXConfiguration) => {
                       console.log(`${configUrl}:`)
                       console.log(jsonData)
 
-                      webmunkCorePlugin.updateConfiguration(jsonData)
+                      rexCorePlugin.updateConfiguration(jsonData)
                         .then((response:string) => {
                           for (const extensionModule of registeredExtensionModules) {
                             extensionModule.refreshConfiguration()
@@ -200,7 +198,7 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
 
     if (message.messageType === 'setIdentifier') {
       chrome.storage.local.set({
-        webmunkIdentifier: message.identifier
+        rexIdentifier: message.identifier
       }).then(() => {
         sendResponse(message.identifier)
       })
@@ -209,10 +207,10 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
     }
 
     if (message.messageType == 'getIdentifier') {
-      chrome.storage.local.get('webmunkIdentifier')
+      chrome.storage.local.get('rexIdentifier')
         .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-          const idResponse:WebmunkIdentifierResponse = response as WebmunkIdentifierResponse
-          sendResponse(idResponse.webmunkIdentifier)
+          const idResponse:REXIdentifierResponse = response as REXIdentifierResponse
+          sendResponse(idResponse.rexIdentifier)
         })
 
       return true
@@ -272,17 +270,17 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
 
     return handled
   },
-  initializeConfiguration: (configuration:WebmunkConfiguration): Promise<string> => {
+  initializeConfiguration: (configuration:REXConfiguration): Promise<string> => {
     return new Promise((resolve) => {
-      chrome.storage.local.get('webmunkConfiguration')
+      chrome.storage.local.get('REXConfiguration')
         .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-          const configResponse:WebmunkConfigurationResponse = response as WebmunkConfigurationResponse
+          const configResponse:REXConfigurationResponse = response as REXConfigurationResponse
 
-          if (configResponse.webmunkConfiguration !== undefined) {
+          if (configResponse.REXConfiguration !== undefined) {
             resolve('Error: Configuration already initialized.')
           } else {
             chrome.storage.local.set({
-              webmunkConfiguration: configuration
+              REXConfiguration: configuration
             }).then(() => {
               resolve('Success: Configuration initialized.')
             })
@@ -290,24 +288,24 @@ const webmunkCorePlugin = { // TODO rename to "engine" or something...
         })
     })
   },
-  updateConfiguration: (configuration:WebmunkConfiguration): Promise<string> => {
+  updateConfiguration: (configuration:REXConfiguration): Promise<string> => {
     return new Promise((resolve) => {
       chrome.storage.local.set({
-        webmunkConfiguration: configuration
+        REXConfiguration: configuration
       }).then(() => {
         resolve('Success: Configuration updated.')
       })
     })
   },
-  fetchConfiguration(): Promise<WebmunkConfiguration> {
+  fetchConfiguration(): Promise<REXConfiguration> {
     return new Promise((resolve, reject) => { // eslint-disable-line @typescript-eslint/no-unused-vars
-      chrome.storage.local.get('webmunkConfiguration')
+      chrome.storage.local.get('REXConfiguration')
         .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-          const idResponse:WebmunkConfigurationResponse = response as WebmunkConfigurationResponse
-          resolve(idResponse.webmunkConfiguration)
+          const idResponse:REXConfigurationResponse = response as REXConfigurationResponse
+          resolve(idResponse.REXConfiguration)
         })
     })
   }
 }
 
-export default webmunkCorePlugin
+export default rexCorePlugin

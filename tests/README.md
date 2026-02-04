@@ -1,6 +1,6 @@
-# Webmunk List Utilities Test Suite
+# REX List Utilities Test Suite
 
-Comprehensive automated and manual tests for the webmunk-core list utilities module.
+Comprehensive automated and manual tests for the rex-core list utilities module.
 
 ## Table of Contents
 

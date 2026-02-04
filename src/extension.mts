@@ -1,22 +1,22 @@
 import $ from 'jquery'
 
-export interface WebmunkUIDefinition {
+export interface REXUIDefinition {
   title:string,
   identifier:string,
   depends_on:string[]
   load_dynamic?:boolean
 }
 
-export interface WebmunkConfiguration {
-  ui:WebmunkUIDefinition[],
+export interface REXConfiguration {
+  ui:REXUIDefinition[],
   configuration_url:string
 }
 
-export class WebmunkExtensionModule {
+export class REXExtensionModule {
   instantiationTarget:string
 
   constructor() {
-    if (new.target === WebmunkExtensionModule) {
+    if (new.target === REXExtensionModule) {
       throw new Error('Cannot be instantiated')
     }
 
@@ -24,7 +24,7 @@ export class WebmunkExtensionModule {
   }
 
   setup() {
-    console.log(`TODO: Implement in ${this.instantiationTarget}...`)
+    console.log(`[REXExtensionModule] TODO: Implement in ${this.instantiationTarget}...`)
   }
 
   async checkRequirement(requirement:string) { // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -33,7 +33,7 @@ export class WebmunkExtensionModule {
     })
   }
 
-  activateInterface(uiDefinition:WebmunkUIDefinition):boolean { // eslint-disable-line @typescript-eslint/no-unused-vars
+  activateInterface(uiDefinition:REXUIDefinition):boolean { // eslint-disable-line @typescript-eslint/no-unused-vars
     return false
   }
 
@@ -42,17 +42,17 @@ export class WebmunkExtensionModule {
   }
 }
 
-const registeredExtensionModules:WebmunkExtensionModule[] = []
+const registeredExtensionModules:REXExtensionModule[] = []
 
-export function registerWebmunkModule(webmunkModule:WebmunkExtensionModule) {
-  if (!registeredExtensionModules.includes(webmunkModule)) {
-    registeredExtensionModules.push(webmunkModule)
+export function registerREXModule(rexModule:REXExtensionModule) {
+  if (!registeredExtensionModules.includes(rexModule)) {
+    registeredExtensionModules.push(rexModule)
 
-    webmunkModule.setup()
+    rexModule.setup()
   }
 }
 
-export const webmunkCorePlugin = {
+export const rexCorePlugin = {
   interface: {
     identifier: '',
     title: '',
@@ -66,10 +66,10 @@ export const webmunkCorePlugin = {
         configUrl = chrome.runtime.getURL(configPath)
       }
 
-      fetch(configUrl)
+      fetch(configUrl, { signal: AbortSignal.timeout(120000) })
         .then((response: Response) => {
           if (response.ok) {
-            response.json().then((jsonData:WebmunkConfiguration) => {
+            response.json().then((jsonData:REXConfiguration) => {
               chrome.runtime.sendMessage({
                 'messageType': 'loadInitialConfiguration',
                 'configuration': jsonData
@@ -89,7 +89,7 @@ export const webmunkCorePlugin = {
         })
       })
   },
-  validateInterface: async function (uiDefinition:WebmunkUIDefinition) {
+  validateInterface: async function (uiDefinition:REXUIDefinition) {
     return new Promise<void>((resolve, reject) => {
       const requirements:string[] = []
 
@@ -129,13 +129,13 @@ export const webmunkCorePlugin = {
       chrome.runtime.sendMessage({
         'messageType': 'fetchConfiguration',
       }).then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-        const configuration = response as WebmunkConfiguration
+        const configuration = response as REXConfiguration
 
         console.log('configuration')
         console.log(configuration)
 
         for (const uiDefinition of configuration.ui) {
-          webmunkCorePlugin.validateInterface(uiDefinition)
+          rexCorePlugin.validateInterface(uiDefinition)
             .then(() => {
               resolve(uiDefinition)
             }, (reason:string) => {
@@ -146,21 +146,21 @@ export const webmunkCorePlugin = {
     })
   },
   refreshInterface: () => {
-    webmunkCorePlugin.fetchCurrentInterface()
+    rexCorePlugin.fetchCurrentInterface()
       .then((response:object) => {
-        const uiDefinition = response as WebmunkUIDefinition
+        const uiDefinition = response as REXUIDefinition
 
-        if (webmunkCorePlugin.interface.identifier !== uiDefinition.identifier) {
-          webmunkCorePlugin.interface = uiDefinition
+        if (rexCorePlugin.interface.identifier !== uiDefinition.identifier) {
+          rexCorePlugin.interface = uiDefinition
 
-          webmunkCorePlugin.loadInterface(webmunkCorePlugin.interface)
+          rexCorePlugin.loadInterface(rexCorePlugin.interface)
         }
       })
   },
-  loadInterface: (uiDefinition:WebmunkUIDefinition) => {
+  loadInterface: (uiDefinition:REXUIDefinition) => {
     document.title = uiDefinition.title
 
-    const contentElement:HTMLElement | null = document.getElementById('webmunk-content')
+    const contentElement:HTMLElement | null = document.getElementById('rex-content')
 
     if (uiDefinition['load_dynamic']) {
       let htmlText:string|null = null
@@ -245,7 +245,7 @@ export const webmunkCorePlugin = {
   }
 }
 
-export class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule {
+export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
   setup() {
     // None needed for default pass-through
   }
@@ -255,7 +255,7 @@ export class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule
       chrome.runtime.sendMessage({
         'messageType': 'fetchConfiguration',
       }).then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
-        const configuration = response as WebmunkConfiguration
+        const configuration = response as REXConfiguration
 
         console.log('configuration')
         console.log(configuration)
@@ -267,7 +267,7 @@ export class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule
         fetch(configUrl)
           .then((response: Response) => {
             if (response.ok) {
-              response.json().then((jsonData:WebmunkConfiguration) => {
+              response.json().then((jsonData:REXConfiguration) => {
                 console.log(`${configUrl}:`)
                 console.log(jsonData)
                 chrome.runtime.sendMessage({
@@ -291,7 +291,7 @@ export class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule
     })
   }
 
-  activateInterface(uiDefinition:WebmunkUIDefinition):boolean {
+  activateInterface(uiDefinition:REXUIDefinition):boolean {
     console.log('activateInterface')
     console.log(uiDefinition)
 
@@ -302,9 +302,9 @@ export class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule
 
         this.validateIdentifier(identifier as string)
           .then((finalIdentifier:string) => {
-            webmunkCorePlugin.setIdentifier(finalIdentifier)
+            rexCorePlugin.setIdentifier(finalIdentifier)
               .then(() => {
-                webmunkCorePlugin.refreshInterface()
+                rexCorePlugin.refreshInterface()
               })
           }, (message:string) => {
             alert(message)
@@ -325,7 +325,7 @@ export class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule
 
   async checkRequirement(requirement:string) {
     return new Promise<boolean>((resolve) => {
-      console.log(`WebmunkCoreIdentifierExtensionModule.checkRequirement: ${requirement}`)
+      console.log(`REXCoreIdentifierExtensionModule.checkRequirement: ${requirement}`)
 
       if (requirement === 'has_identifier') {
         chrome.runtime.sendMessage({ 'messageType': 'getIdentifier' })
@@ -344,4 +344,4 @@ export class WebmunkCoreIdentifierExtensionModule extends WebmunkExtensionModule
   }
 }
 
-registerWebmunkModule(new WebmunkCoreIdentifierExtensionModule())
+registerREXModule(new REXCoreIdentifierExtensionModule())
