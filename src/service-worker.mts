@@ -315,9 +315,10 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           console.log(event)
 
           sendResponse(null)
-      }
+        }
 
-      return true
+        return true
+      }
     }
 
     if (message.messageType == 'storeValue') {
