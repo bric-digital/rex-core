@@ -173,6 +173,8 @@ export const rexCorePlugin = {
       for (const extensionModule of registeredExtensionModules) {
         const content = extensionModule.fetchHtmlInterface(uiDefinition.identifier)
 
+        console.log(`fetchHtmlInterface[${extensionModule}]: ${content}`)
+
         if (content !== null) {
           htmlText = content
         }
@@ -199,6 +201,8 @@ export const rexCorePlugin = {
       }
     } else {
       const templateUrl = chrome.runtime.getURL(`interfaces/${uiDefinition.identifier}.html`)
+
+      console.log(`loadInterface: ${templateUrl}`)
 
       fetch(templateUrl)
         .then((response: Response) => {
