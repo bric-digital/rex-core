@@ -5,7 +5,6 @@ export interface EventPayload {
   [key: string]: unknown,
 }
 
-
 export interface REXConfigurationResponse {
   REXConfiguration:REXConfiguration
 }
@@ -61,6 +60,8 @@ export class REXServiceWorkerModule {
   }
 }
 
+const REX_DATABASE_VERSION = 1
+
 const registeredExtensionModules:REXServiceWorkerModule[] = []
 
 export function registerREXModule(rexModule:REXServiceWorkerModule) {
@@ -78,6 +79,8 @@ export function dispatchEvent(event:EventPayload) {
     }
   }
 }
+
+let rexDatabase:IDBDatabase|null = null
 
 const rexCorePlugin = { // TODO rename to "engine" or something...
   openExtensionWindow: () => {
@@ -139,6 +142,39 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
 
     console.log(`[rex-core] Registered message listener...`)
     chrome.runtime.onMessage.addListener(rexCorePlugin.handleMessage)
+
+    const request = indexedDB.open('rex_db', REX_DATABASE_VERSION)
+
+    request.onerror = (event) => {
+      console.error(`[rex-core] Unable to open REX database: ${event}`)
+    }
+
+    request.onsuccess = (event) => { // eslint-disable-line @typescript-eslint/no-unused-vars
+      rexDatabase = request.result
+
+      console.log(`[rex-core] Successfully opened REX database.`)
+    }
+
+    request.onupgradeneeded = (event) => {
+      console.log(`[rex-core] Upgrade needed...`)
+      console.log(event)
+
+      rexDatabase = request.result
+
+      switch (event.oldVersion) {
+        case 0: {
+          const values = rexDatabase.createObjectStore('values', {
+            keyPath: 'valueId',
+            autoIncrement: true
+          })
+
+          values.createIndex('key', 'key', { unique: true })
+          values.createIndex('value', 'value', { unique: false })
+
+          console.log(`[rex-core] Successfully upgraded the REX database.`)
+        }
+      }
+    }
   },
   handleMessage: (message:any, sender:any, sendResponse:(response:any) => void):boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
     console.log(`[rex-core] Received message:`)
@@ -244,6 +280,60 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       for (const extensionModule of registeredExtensionModules) {
         if (extensionModule.logEvent !== undefined) {
           extensionModule.logEvent(message.event)
+        }
+      }
+
+      return true
+    }
+
+    if (message.messageType == 'fetchValue') {
+      if (rexDatabase !== null) {
+        const index = rexDatabase.transaction(['values'], 'readonly')
+          .objectStore('values')
+          .index('key')
+
+        const cursorRequest = index.openCursor(IDBKeyRange.only(message.key));
+
+        cursorRequest.onsuccess = event => {
+          if (event.target !== null) {
+            const cursor = event.target.result
+
+            if (cursor) {
+              sendResponse(cursor.value)
+
+              cursor.continue();
+            } else {
+              sendResponse(null)
+            }
+          }
+        }
+      }
+
+      return true
+    }
+
+    if (message.messageType == 'storeValue') {
+      if (rexDatabase !== null) {
+        const objectStore = rexDatabase.transaction(['values'], 'readwrite').objectStore('values')
+
+        const newValue = {
+          key: message.key,
+          value: message.value,
+        }
+
+        const request = objectStore.put(newValue)
+
+        request.onsuccess = function (event) { // eslint-disable-line @typescript-eslint/no-unused-vars
+          console.log(`[rex-core] Value saved successfully. ${newValue.key} = ${newValue.value}.`)
+
+          sendResponse(true)
+        }
+
+        request.onerror = function (event) {
+          console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
+          console.error(event)
+
+          sendResponse(false)
         }
       }
 
