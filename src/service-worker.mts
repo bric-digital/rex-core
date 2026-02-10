@@ -131,6 +131,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       }
     })
 
+    console.log(`[rex-core] Registered message listener...`)
     chrome.runtime.onMessage.addListener(rexCorePlugin.handleMessage)
   },
   handleMessage: (message:any, sender:any, sendResponse:(response:any) => void):boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
