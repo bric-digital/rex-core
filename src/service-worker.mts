@@ -134,6 +134,9 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     chrome.runtime.onMessage.addListener(rexCorePlugin.handleMessage)
   },
   handleMessage: (message:any, sender:any, sendResponse:(response:any) => void):boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    console.log(`[rex-core] Received message:`)
+    console.log(message)
+
     if (message.messageType == 'loadInitialConfiguration') {
       rexCorePlugin.initializeConfiguration(message.configuration)
         .then((response:string) => {
