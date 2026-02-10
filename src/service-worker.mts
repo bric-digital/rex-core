@@ -303,7 +303,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
             const cursor = (event.target as any)['result']
 
             if (cursor) {
-              sendResponse(cursor.value)
+              sendResponse(cursor.value.value)
             } else {
               sendResponse(null)
             }
