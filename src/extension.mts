@@ -99,6 +99,7 @@ export const rexCorePlugin = {
 
       console.log('requirements')
       console.log(requirements)
+      console.log(uiDefinition)
 
       for (const requirement of requirements) {
         for (const extensionModule of registeredExtensionModules) {
@@ -331,6 +332,9 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
         chrome.runtime.sendMessage({ 'messageType': 'getIdentifier' })
           .then((identifier) => {
             console.log(`identifier: ${identifier}`)
+            console.log(identifier
+
+            )
             if ([null, undefined].includes(identifier) || identifier.length == 0) {
               resolve(false)
             } else {
