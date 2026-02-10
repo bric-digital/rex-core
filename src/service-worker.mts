@@ -377,7 +377,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
               sendResponse(false)
             }
           }
-
+        }
       }
 
       return true
