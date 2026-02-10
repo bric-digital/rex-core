@@ -268,8 +268,12 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
 
     for (const extensionModule of registeredExtensionModules) {
       if (extensionModule.handleMessage !== undefined) {
+        console.log(`[rex-core] Checking if ${extensionModule} handles message:`)
+        console.log(message)
+
         if (extensionModule.handleMessage(message, sender, sendResponse)) {
           handled = true
+          console.log(`[rex-core] ${extensionModule} handles message.`)
         }
       }
     }
