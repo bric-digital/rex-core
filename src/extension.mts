@@ -118,6 +118,8 @@ export const rexCorePlugin = {
 
       window.setTimeout(function() {
         if (requirements.length == 0) {
+          console.log('ready!')
+          console.log(uiDefinition)
           resolve()
         } else {
           reject(`Unfulfilled requirements: ${requirements}...`)
