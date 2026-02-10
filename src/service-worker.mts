@@ -1,5 +1,11 @@
 import { type REXConfiguration } from "./extension.mjs"
 
+export interface EventPayload {
+  'name':string,
+  [key: string]: unknown,
+}
+
+
 export interface REXConfigurationResponse {
   REXConfiguration:REXConfiguration
 }
@@ -65,7 +71,7 @@ export function registerREXModule(rexModule:REXServiceWorkerModule) {
   }
 }
 
-export function dispatchEvent(event: { name: string; [key: string]: unknown }) {
+export function dispatchEvent(event:EventPayload) {
   for (const extensionModule of registeredExtensionModules) {
     if (extensionModule.logEvent !== undefined) {
       extensionModule.logEvent(event)
