@@ -230,31 +230,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     }
 
     if (message.messageType == 'openWindow') {
-      const optionsUrl = chrome.runtime.getURL('index.html')
-
-      chrome.tabs.query({})
-        .then((extensionTabs:chrome.tabs.Tab[]) => {
-          for (let i = 0; i < extensionTabs.length; i++) {
-            const extensionTab = extensionTabs[i]
-
-            if (extensionTab !== undefined) {
-              if (optionsUrl === extensionTab.url) {
-                chrome.windows.remove(extensionTab.windowId)
-              }
-            }
-          }
-
-          chrome.windows.create({
-            height: 480,
-            width: 640,
-            type: 'panel',
-            url: chrome.runtime.getURL('index.html')
-          }).then((newWindow:chrome.windows.Window | undefined) => {
-            if (newWindow !== undefined) {
-              sendResponse(newWindow.id)
-            }
-          })
-        })
+      rexCorePlugin.openExtensionWindow()
 
       return true
     }
