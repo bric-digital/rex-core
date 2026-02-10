@@ -92,13 +92,13 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           }
         }
       }
+    })
 
-      chrome.windows.create({
-        height: 480,
-        width: 640,
-        type: 'panel',
-        url: chrome.runtime.getURL('index.html')
-      })
+    chrome.windows.create({
+      height: 480,
+      width: 640,
+      type: 'panel',
+      url: chrome.runtime.getURL('index.html')
     })
   },
   setup: () => {
