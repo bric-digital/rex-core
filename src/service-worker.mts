@@ -99,17 +99,19 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       height: 480,
       width: 640,
       type: 'panel',
-      url: chrome.runtime.getURL('index.html')
+      url: optionsUrl
     })
   },
   setup: () => {
     console.log(`[rex-core] Running setup...`)
 
     chrome.runtime.onInstalled.addListener(function (details:object) { // eslint-disable-line @typescript-eslint/no-unused-vars
+      console.log(`[rex-core] chrome.runtime.onInstalled.addListener`)
       rexCorePlugin.openExtensionWindow()
     })
 
     chrome.action.onClicked.addListener(function (tab) { // eslint-disable-line @typescript-eslint/no-unused-vars
+      console.log(`[rex-core] chrome.action.onClicked.addListener`)
       rexCorePlugin.openExtensionWindow()
     })
 
