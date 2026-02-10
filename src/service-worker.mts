@@ -101,6 +101,8 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     })
   },
   setup: () => {
+    console.log(`[rex-core] Running setup...`)
+
     chrome.runtime.onInstalled.addListener(function (details:object) { // eslint-disable-line @typescript-eslint/no-unused-vars
       rexCorePlugin.openExtensionWindow()
     })
