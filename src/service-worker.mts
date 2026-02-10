@@ -81,6 +81,7 @@ export function dispatchEvent(event:EventPayload) {
 
 const rexCorePlugin = { // TODO rename to "engine" or something...
   openExtensionWindow: () => {
+    console.log('openExtensionWindow')
     const optionsUrl = chrome.runtime.getURL('index.html')
 
     chrome.tabs.query({}, function (extensionTabs) {
