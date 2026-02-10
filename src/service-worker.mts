@@ -296,7 +296,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
 
         cursorRequest.onsuccess = event => {
           if (event.target !== null) {
-            const cursor = event.target.result
+            const cursor = (event.target as any)['result']
 
             if (cursor) {
               sendResponse(cursor.value)
