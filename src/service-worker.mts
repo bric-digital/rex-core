@@ -94,6 +94,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       }
     })
 
+    console.log('chrome.windows.create')
     chrome.windows.create({
       height: 480,
       width: 640,
