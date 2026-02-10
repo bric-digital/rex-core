@@ -153,6 +153,8 @@ export const rexCorePlugin = {
       .then((response:object) => {
         const uiDefinition = response as REXUIDefinition
 
+        console.log(`TEST ${rexCorePlugin.interface.identifier} =? ${uiDefinition.identifier}`)
+
         if (rexCorePlugin.interface.identifier !== uiDefinition.identifier) {
           rexCorePlugin.interface = uiDefinition
 
