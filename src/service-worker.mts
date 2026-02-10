@@ -304,6 +304,6 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
   }
 }
 
-rexCorePlugin.setup()
+// rexCorePlugin.setup()
 
 export default rexCorePlugin
