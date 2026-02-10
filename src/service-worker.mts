@@ -310,7 +310,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           }
         }
 
-        cursorRequest.onsuccess = event => {
+        cursorRequest.onerror = event => {
           console.log(`fetch error for ${message.key}...`)
           console.log(event)
 
@@ -323,27 +323,61 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
 
     if (message.messageType == 'storeValue') {
       if (rexDatabase !== null) {
-        const objectStore = rexDatabase.transaction(['values'], 'readwrite').objectStore('values')
-
         const newValue = {
           key: message.key,
           value: message.value,
         }
 
-        const request = objectStore.put(newValue)
+        const index = rexDatabase.transaction(['values'], 'readonly')
+          .objectStore('values')
+          .index('key')
 
-        request.onsuccess = function (event) { // eslint-disable-line @typescript-eslint/no-unused-vars
-          console.log(`[rex-core] Value saved successfully. ${newValue.key} = ${newValue.value}.`)
+        const cursorRequest = index.openCursor(IDBKeyRange.only(message.key));
 
-          sendResponse(true)
+        cursorRequest.onsuccess = event => {
+          console.log(`fetched for ${message.key}...`)
+          console.log(event)
+
+          if (event.target !== null) {
+            const cursor = (event.target as any)['result']
+
+            const updateRequest = cursor.update(newValue)
+
+            updateRequest.onsuccess = function (updateEvent) { // eslint-disable-line @typescript-eslint/no-unused-vars
+              console.log(`[rex-core] Value saved successfully. ${newValue.key} = ${newValue.value}.`)
+
+              sendResponse(true)
+            }
+
+            updateRequest.onerror = function (updateEvent) {
+              console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
+              console.error(event)
+
+              sendResponse(false)
+            }
+          }
         }
 
-        request.onerror = function (event) {
-          console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
-          console.error(event)
+        cursorRequest.onerror = event => {
+          if (rexDatabase !== null) {
+            const objectStore = rexDatabase.transaction(['values'], 'readwrite').objectStore('values')
 
-          sendResponse(false)
-        }
+            const putRequest = objectStore.put(newValue)
+
+            putRequest.onsuccess = function (putEvent) { // eslint-disable-line @typescript-eslint/no-unused-vars
+              console.log(`[rex-core] Value saved successfully. ${newValue.key} = ${newValue.value}.`)
+
+              sendResponse(true)
+            }
+
+            putRequest.onerror = function (putEvent) {
+              console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
+              console.error(event)
+
+              sendResponse(false)
+            }
+          }
+
       }
 
       return true
