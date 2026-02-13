@@ -174,9 +174,6 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     }
   },
   handleMessage: (message:any, sender:any, sendResponse:(response:any) => void):boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
-    console.log(`[rex-core] Received message:`)
-    console.log(message)
-
     if (message.messageType == 'loadInitialConfiguration') {
       rexCorePlugin.initializeConfiguration(message.configuration)
         .then((response:string) => {
@@ -398,6 +395,11 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           console.log(message)
         }
       }
+    }
+
+    if (handled === false) {
+      console.log(`[rex-core] Received unknown message:`)
+      console.log(message)
     }
 
     return handled
