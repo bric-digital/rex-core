@@ -353,10 +353,10 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           .objectStore('values')
           .index('key')
 
-        const cursorRequest = index.openCursor(IDBKeyRange.only(message.key));
+        const cursorRequest = index.openCursor(IDBKeyRange.only(newValue.key));
 
         cursorRequest.onsuccess = event => {
-          console.log(`fetched for ${message.key}...`)
+          console.log(`fetched for ${newValue.key}...`)
           console.log(event)
 
           if (event.target !== null) {
