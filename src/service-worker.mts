@@ -329,7 +329,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           if (rexDatabase !== null) {
             const objectStore = rexDatabase.transaction(['values'], 'readwrite').objectStore('values')
 
-            const putRequest = objectStore.put(newValue)
+            const putRequest = objectStore.put(newValue, newValue.key)
 
             putRequest.onsuccess = function (putEvent) { // eslint-disable-line @typescript-eslint/no-unused-vars
               console.log(`[rex-core] Value saved successfully. ${newValue.key} = ${newValue.value}.`)
