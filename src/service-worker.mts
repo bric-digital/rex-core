@@ -378,7 +378,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
               }
 
               updateRequest.onerror = function (updateEvent:any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-                console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
+                console.error(`[rex-core] Value NOT saved successfully. ${message.key} = ${newValue.value}.`)
                 console.error(updateEvent)
 
                 sendResponse(false)
