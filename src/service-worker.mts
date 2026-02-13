@@ -340,9 +340,9 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
               sendResponse(true)
             }
 
-            putRequest.onerror = function (putEvent) { // eslint-disable-line @typescript-eslint/no-unused-vars
+            putRequest.onerror = function (putEvent) {
               console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
-              console.error(event)
+              console.error(putEvent)
 
               sendResponse(false)
             }
@@ -373,9 +373,9 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
                 sendResponse(true)
               }
 
-              updateRequest.onerror = function (updateEvent:any) { // eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+              updateRequest.onerror = function (updateEvent:any) { // eslint-disable-line @typescript-eslint/no-explicit-any
                 console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
-                console.error(event)
+                console.error(updateEvent)
 
                 sendResponse(false)
               }
