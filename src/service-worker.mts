@@ -349,7 +349,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           }
         }
 
-        const index = rexDatabase.transaction(['values'], 'readonly')
+        const index = rexDatabase.transaction(['values'], 'readwrite')
           .objectStore('values')
           .index('key')
 
