@@ -285,7 +285,6 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
 
     if (message.messageType == 'fetchValue') {
       if (rexDatabase !== null) {
-        console.log(`fetching value for ${message.key}...`)
         const index = rexDatabase.transaction(['values'], 'readonly')
           .objectStore('values')
           .index('key')
@@ -293,9 +292,6 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
         const cursorRequest = index.openCursor(IDBKeyRange.only(message.key));
 
         cursorRequest.onsuccess = event => {
-          console.log(`fetched for ${message.key}...`)
-          console.log(event)
-
           if (event.target !== null) {
             const cursor = (event.target as any)['result']// eslint-disable-line @typescript-eslint/no-explicit-any
 
