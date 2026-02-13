@@ -372,7 +372,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
               const updateRequest = cursor.update(newValue)
 
               updateRequest.onsuccess = function (updateEvent:any) { // eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-                console.log(`[rex-core] Value saved successfully. ${newValue.key} = ${newValue.value}.`)
+                console.log(`[rex-core] Value saved successfully. ${message.key} = ${newValue.value}.`)
 
                 sendResponse(true)
               }
