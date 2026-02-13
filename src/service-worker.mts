@@ -328,37 +328,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           value: message.value,
         }
 
-        const index = rexDatabase.transaction(['values'], 'readonly')
-          .objectStore('values')
-          .index('key')
-
-        const cursorRequest = index.openCursor(IDBKeyRange.only(message.key));
-
-        cursorRequest.onsuccess = event => {
-          console.log(`fetched for ${message.key}...`)
-          console.log(event)
-
-          if (event.target !== null) {
-            const cursor = (event.target as any)['result']// eslint-disable-line @typescript-eslint/no-explicit-any
-
-            const updateRequest = cursor.update(newValue)
-
-            updateRequest.onsuccess = function (updateEvent:any) { // eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-              console.log(`[rex-core] Value saved successfully. ${newValue.key} = ${newValue.value}.`)
-
-              sendResponse(true)
-            }
-
-            updateRequest.onerror = function (updateEvent:any) { // eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-              console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
-              console.error(event)
-
-              sendResponse(false)
-            }
-          }
-        }
-
-        cursorRequest.onerror = event => {
+        const doInsert = () => {
           if (rexDatabase !== null) {
             const objectStore = rexDatabase.transaction(['values'], 'readwrite').objectStore('values')
 
@@ -377,6 +347,44 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
               sendResponse(false)
             }
           }
+        }
+
+        const index = rexDatabase.transaction(['values'], 'readonly')
+          .objectStore('values')
+          .index('key')
+
+        const cursorRequest = index.openCursor(IDBKeyRange.only(message.key));
+
+        cursorRequest.onsuccess = event => {
+          console.log(`fetched for ${message.key}...`)
+          console.log(event)
+
+          if (event.target !== null) {
+            const cursor = (event.target as any)['result']// eslint-disable-line @typescript-eslint/no-explicit-any
+
+            if (cursor === null) {
+              doInsert()
+            } else {
+              const updateRequest = cursor.update(newValue)
+
+              updateRequest.onsuccess = function (updateEvent:any) { // eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+                console.log(`[rex-core] Value saved successfully. ${newValue.key} = ${newValue.value}.`)
+
+                sendResponse(true)
+              }
+
+              updateRequest.onerror = function (updateEvent:any) { // eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+                console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
+                console.error(event)
+
+                sendResponse(false)
+              }
+            }
+          }
+        }
+
+        cursorRequest.onerror = event => {
+          doInsert()
         }
       }
 
