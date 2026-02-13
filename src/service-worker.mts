@@ -324,8 +324,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     if (message.messageType == 'storeValue') {
       if (rexDatabase !== null) {
         const newValue = {
-          key: message.key,
-          value: message.value,
+          value: message.value
         }
 
         const doInsert = () => {
@@ -335,13 +334,13 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
             const putRequest = objectStore.put(newValue)
 
             putRequest.onsuccess = function (putEvent) { // eslint-disable-line @typescript-eslint/no-unused-vars
-              console.log(`[rex-core] Value saved successfully. ${newValue.key} = ${newValue.value}.`)
+              console.log(`[rex-core] Value saved successfully. ${message.key} = ${newValue.value}.`)
 
               sendResponse(true)
             }
 
             putRequest.onerror = function (putEvent) {
-              console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
+              console.error(`[rex-core] Value NOT saved successfully. ${message.key} = ${newValue.value}.`)
               console.error(putEvent)
 
               sendResponse(false)
@@ -353,10 +352,10 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           .objectStore('values')
           .index('key')
 
-        const cursorRequest = index.openCursor(IDBKeyRange.only(newValue.key));
+        const cursorRequest = index.openCursor(IDBKeyRange.only(message.key));
 
         cursorRequest.onsuccess = event => {
-          console.log(`fetched for ${newValue.key}...`)
+          console.log(`fetched for ${message.key}...`)
           console.log(event)
 
           if (event.target !== null) {
