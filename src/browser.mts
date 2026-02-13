@@ -107,9 +107,17 @@ export function injectREXSelectors() {
     }
   })
 
-  $.expr.pseudos.trimmedTextEquals = $.expr.createPseudo((pattern) => {
+  $.expr.pseudos.trimmedTextEquals = $.expr.createPseudo((pattern:string) => {
     return function(elem: Element) : boolean {
-      return ($(elem).text().match("^" + pattern + "$").length > 0)
+      if (elem !== null && pattern !== null) {
+        const matches = $(elem).text().match(`^${pattern}$`)
+
+        if (matches !== null) {
+          return (matches.length > 0)
+        }
+      }
+
+      return false
     }
   })
 }
