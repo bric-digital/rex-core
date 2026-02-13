@@ -300,7 +300,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           console.log(event)
 
           if (event.target !== null) {
-            const cursor = (event.target as any)['result']
+            const cursor = (event.target as any)['result']// eslint-disable-line @typescript-eslint/no-explicit-any
 
             if (cursor) {
               sendResponse(cursor.value.value)
@@ -339,7 +339,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           console.log(event)
 
           if (event.target !== null) {
-            const cursor = (event.target as any)['result']
+            const cursor = (event.target as any)['result']// eslint-disable-line @typescript-eslint/no-explicit-any
 
             const updateRequest = cursor.update(newValue)
 
@@ -349,7 +349,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
               sendResponse(true)
             }
 
-            updateRequest.onerror = function (updateEvent) {
+            updateRequest.onerror = function (updateEvent) { // eslint-disable-line @typescript-eslint/no-unused-vars
               console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
               console.error(event)
 
@@ -370,7 +370,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
               sendResponse(true)
             }
 
-            putRequest.onerror = function (putEvent) {
+            putRequest.onerror = function (putEvent) { // eslint-disable-line @typescript-eslint/no-unused-vars
               console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
               console.error(event)
 
