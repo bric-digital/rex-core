@@ -163,10 +163,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
 
       switch (event.oldVersion) {
         case 0: {
-          const values = rexDatabase.createObjectStore('values', {
-            keyPath: 'valueId',
-            autoIncrement: true
-          })
+          const values = rexDatabase.createObjectStore('values')
 
           values.createIndex('key', 'key', { unique: true })
           values.createIndex('value', 'value', { unique: false })
