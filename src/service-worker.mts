@@ -377,7 +377,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           }
         }
 
-        cursorRequest.onerror = event => {
+        cursorRequest.onerror = event => { // eslint-disable-line @typescript-eslint/no-unused-vars
           doInsert()
         }
       }
