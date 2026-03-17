@@ -147,3 +147,5 @@ test-results/
 
 tests/node_modules/
 tests/.playwright/
+tests/*.bundle.js
+tests/*.bundle.js.map
