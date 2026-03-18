@@ -259,6 +259,10 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
     // None needed for default pass-through
   }
 
+  validateIdentifierFormat(identifier:string):boolean { // eslint-disable-line @typescript-eslint/no-unused-vars
+    return true
+  }
+
   async validateIdentifier(identifier:string) {
     return new Promise<string>((resolve, reject) => {
       chrome.runtime.sendMessage({
@@ -307,9 +311,15 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
     if (uiDefinition.identifier == 'identifier') {
       $('#coreSaveIdentifier').off('click')
       $('#coreSaveIdentifier').on('click', () => {
-        const identifier = $('input[type="text"]').val()
+        const identifier = ($('input[type="text"]').val() as string).trim()
 
-        this.validateIdentifier(identifier as string)
+        if (this.validateIdentifierFormat(identifier) === false) {
+          alert('Invalid identifier.\n\nPlease check your assigned ID and reenter.')
+
+          return
+        }
+
+        this.validateIdentifier(identifier)
           .then((finalIdentifier:string) => {
             rexCorePlugin.setIdentifier(finalIdentifier)
               .then(() => {
