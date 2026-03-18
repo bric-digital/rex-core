@@ -273,6 +273,12 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
         console.log('configuration')
         console.log(configuration)
 
+        if (configuration === null || configuration === undefined) {
+          reject('Configuration not available. Please try again.')
+
+          return
+        }
+
         const configUrlStr = configuration['configuration_url'] as string
 
         const configUrl:URL = new URL(configUrlStr.replaceAll('<IDENTIFIER>', identifier))
@@ -287,7 +293,7 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
                   'messageType': 'updateConfiguration',
                   'configuration': jsonData
                 }).then((response: string) => {
-                  if (response.toLowerCase().startsWith('error')) {
+                  if (response === null || response === undefined || response.toLowerCase().startsWith('error')) {
                     reject(`Received error from service worker: ${response}`)
                   } else {
                     resolve(identifier)
