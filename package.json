@@ -46,7 +46,7 @@
         "typescript-eslint": "^8.52.0"
     },
     "dependencies": {
-        "jquery": "^3.7.1",
+        "jquery": "^4.0.0",
         "psl": "^1.15.0"
     }
 }
