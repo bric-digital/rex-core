@@ -259,6 +259,10 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
     // None needed for default pass-through
   }
 
+  validateIdentifierFormat(identifier:string):boolean { // eslint-disable-line @typescript-eslint/no-unused-vars
+    return true
+  }
+
   async validateIdentifier(identifier:string) {
     return new Promise<string>((resolve, reject) => {
       chrome.runtime.sendMessage({
@@ -268,6 +272,12 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
 
         console.log('configuration')
         console.log(configuration)
+
+        if (configuration === null || configuration === undefined) {
+          reject('Configuration not available. Please try again.')
+
+          return
+        }
 
         const configUrlStr = configuration['configuration_url'] as string
 
@@ -283,7 +293,7 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
                   'messageType': 'updateConfiguration',
                   'configuration': jsonData
                 }).then((response: string) => {
-                  if (response.toLowerCase().startsWith('error')) {
+                  if (response === null || response === undefined || response.toLowerCase().startsWith('error')) {
                     reject(`Received error from service worker: ${response}`)
                   } else {
                     resolve(identifier)
@@ -307,9 +317,15 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
     if (uiDefinition.identifier == 'identifier') {
       $('#coreSaveIdentifier').off('click')
       $('#coreSaveIdentifier').on('click', () => {
-        const identifier = $('input[type="text"]').val()
+        const identifier = ($('input[type="text"]').val() as string).trim()
 
-        this.validateIdentifier(identifier as string)
+        if (this.validateIdentifierFormat(identifier) === false) {
+          alert('Invalid identifier.\n\nPlease check your assigned ID and reenter.')
+
+          return
+        }
+
+        this.validateIdentifier(identifier)
           .then((finalIdentifier:string) => {
             rexCorePlugin.setIdentifier(finalIdentifier)
               .then(() => {

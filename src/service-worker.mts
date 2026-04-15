@@ -223,6 +223,11 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
                       console.log(`${configUrl}:`)
                       console.log(jsonData)
 
+                      if (jsonData === null || jsonData === undefined) {
+                        sendResponse(null)
+                        return
+                      }
+
                       rexCorePlugin.updateConfiguration(jsonData)
                         .then((response:string) => { // eslint-disable-line @typescript-eslint/no-unused-vars
                           for (const extensionModule of registeredExtensionModules) {
