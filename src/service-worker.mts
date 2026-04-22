@@ -1,4 +1,4 @@
-import { type REXConfiguration } from "./extension.mjs"
+import { type REXConfiguration } from "./common.mjs"
 
 export interface EventPayload {
   'name':string,
