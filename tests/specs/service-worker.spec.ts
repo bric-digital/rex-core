@@ -8,8 +8,6 @@ test('Service worker test: Set identifier', async ({serviceWorker}) => {
       return new Promise<any>((testResolve) => {
         serviceWorker.evaluate(async () => {
           return new Promise<any>((testResolve) => {
-            console.log('self.rexCorePlugin')
-
             self.rexCorePlugin.handleMessage({
               'messageType': 'setIdentifier',
               'identifier': 'i-am-rex'
@@ -19,8 +17,6 @@ test('Service worker test: Set identifier', async ({serviceWorker}) => {
           })
         })
         .then((workerResponse) => {
-          console.log('workerResponse')
-          console.log(workerResponse)
           expect(workerResponse).toEqual('i-am-rex')
 
           resolve()
