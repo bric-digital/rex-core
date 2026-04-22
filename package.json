@@ -33,7 +33,7 @@
         "test:unit": "playwright test specs/"
     },
     "devDependencies": {
-        "@eslint/js": "^9.39.2",
+        "@eslint/js": "^10.0.1",
         "@playwright/test": "^1.58.2",
         "@types/jquery": "^4.0.0",
         "@types/psl": "^1.1.3",
