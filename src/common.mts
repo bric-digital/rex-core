@@ -7,5 +7,6 @@ export interface REXUIDefinition {
 
 export interface REXConfiguration {
   ui:REXUIDefinition[],
-  configuration_url:string
+  configuration_url:string,
+  [key: string]: any
 }
