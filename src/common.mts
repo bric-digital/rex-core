@@ -8,5 +8,5 @@ export interface REXUIDefinition {
 export interface REXConfiguration {
   ui:REXUIDefinition[],
   configuration_url:string,
-  [key: string]: any
+  [key: string]: any // eslint-disable-line @typescript-eslint/no-explicit-any
 }
