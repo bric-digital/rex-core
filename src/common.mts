@@ -16,7 +16,11 @@ export function sha256(cleartext:string):Promise<string> {
     const msgUint8 = new TextEncoder().encode(cleartext); // encode as (utf-8) Uint8Array
 
     crypto.subtle.digest('SHA-256', msgUint8).then((hashBuffer) => {
-      const hashHex = new Uint8Array(hashBuffer).toHex()
+      const hexBytes = new Uint8Array(hashBuffer)
+
+      const hashHex = Array.from(hexBytes, (byte) => 
+        byte.toString(16).padStart(2, '0')
+      ).join('');      
 
       resolve(hashHex)
     })
