@@ -276,11 +276,17 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     if (message.messageType == 'logEvent') {
       // message.event = { name:string, ... }
 
+      let loggedCount:number = 0
+
       for (const extensionModule of registeredExtensionModules) {
         if (extensionModule.logEvent !== undefined) {
           extensionModule.logEvent(message.event)
+
+          loggedCount += 1
         }
       }
+
+      sendResponse(loggedCount)
 
       return true
     }
