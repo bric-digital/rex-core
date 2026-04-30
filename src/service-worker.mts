@@ -1,4 +1,4 @@
-import { type REXConfiguration } from "./common.mjs"
+import { type REXConfiguration, sha256 } from "./common.mjs"
 
 export interface EventPayload {
   'name':string,
@@ -442,7 +442,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       })
     })
   },
-  fetchConfiguration(): Promise<REXConfiguration> {
+  fetchConfiguration: ():Promise<REXConfiguration> => {
     return new Promise((resolve, reject) => { // eslint-disable-line @typescript-eslint/no-unused-vars
       chrome.storage.local.get('REXConfiguration')
         .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -450,6 +450,10 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           resolve(idResponse.REXConfiguration)
         })
     })
+  },
+
+  generateHash: (cleartext:string): Promise<string> => {
+    return sha256(cleartext)
   }
 }
 
