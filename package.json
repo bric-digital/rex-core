@@ -44,7 +44,7 @@
         "esbuild": "^0.28.0",
         "eslint": "^10.2.1",
         "globals": "^17.3.0",
-        "jiti": "^2.6.1",
+        "jiti": "^2.7.0",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.55.0",
         "bootstrap": "^5.3.8",
