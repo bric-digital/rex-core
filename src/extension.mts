@@ -91,34 +91,63 @@ export const rexCorePlugin = {
       console.log(requirements)
       console.log(uiDefinition)
 
-      for (const requirement of requirements) {
-        for (const extensionModule of registeredExtensionModules) {
-          if (extensionModule.checkRequirement !== undefined) {
-            extensionModule.checkRequirement(requirement)
-              .then((isFulfilled) => {
-                while (isFulfilled && requirements.includes(requirement)) {
-                  const index = requirements.indexOf(requirement);
-
-                  requirements.splice(index, 1)
-                }
-              })
-          }
-        }
-      }
-
-      window.setTimeout(function() {
+      const checkRequirement = () => {
         if (requirements.length == 0) {
           console.log('ready!')
           console.log(uiDefinition)
           resolve()
         } else {
-          reject(`Unfulfilled requirements: ${requirements}...`)
-     }
-      }, 500)
+          const requirement:string|undefined = requirements.pop()
+
+          if (requirement !== undefined) {
+            const pendingModules:REXExtensionModule[] = []
+            pendingModules.push(...registeredExtensionModules)
+
+            const checkModule = () => {
+              if (pendingModules.length == 0) {
+                if (requirements.length == 0) {
+                  resolve()
+                } else {
+                  reject(`Unfulfilled requirements: ${requirements}...`)
+                }
+              } else {
+                const nextModule:REXExtensionModule|undefined = pendingModules.pop()
+
+                if (nextModule !== undefined) {
+                  nextModule.checkRequirement(requirement)
+                    .then((isFulfilled) => {
+                      while (isFulfilled && requirements.includes(requirement)) {
+                        const index = requirements.indexOf(requirement);
+
+                        requirements.splice(index, 1)
+                      }
+
+                      while (isFulfilled && pendingModules.length > 0) {
+                        // Requirement fulfilled, no need to check other modules, so
+                        // empty pending list...
+                        pendingModules.pop()
+                      }
+
+                      checkModule()
+                    })
+                } else {
+                  checkModule()
+                }
+              }
+            }
+
+            checkModule()
+          } else {
+            checkRequirement()
+          }
+        }
+      }
+
+      checkRequirement()
     })
   },
   fetchCurrentInterface: async function() {
-    return new Promise<object>((resolve) => {
+    return new Promise<REXUIDefinition>((resolve, reject) => {
       chrome.runtime.sendMessage({
         'messageType': 'fetchConfiguration',
       }).then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -127,20 +156,39 @@ export const rexCorePlugin = {
         console.log('configuration')
         console.log(configuration)
 
-        for (const uiDefinition of configuration.ui) {
-          rexCorePlugin.validateInterface(uiDefinition)
-            .then(() => {
-              resolve(uiDefinition)
-            }, (reason:string) => {
-              console.log(`Interface "${uiDefinition.identifier} invalid: ${reason}`)
-            })
+        const pendingInterfaces:REXUIDefinition[] = []
+
+        pendingInterfaces.push(...configuration.ui)
+
+        const checkNextInterface = () => {
+          if (pendingInterfaces.length == 0) {
+            // Checked all interfaces - none are valid. Rejecting...
+            reject('No valid interfaces are currently available.')
+          } else {
+            const nextInterface:REXUIDefinition|undefined = pendingInterfaces.pop()
+
+            if (nextInterface !== undefined) {
+              rexCorePlugin.validateInterface(nextInterface)
+                .then(() => {
+                  resolve(nextInterface)
+                }, (reason:string) => {
+                  console.log(`Interface "${nextInterface.identifier} invalid: ${reason}`)
+
+                  checkNextInterface()
+                })
+            } else {
+              checkNextInterface()
+            }
+          }
         }
+
+        checkNextInterface()
       })
     })
   },
   refreshInterface: () => {
     rexCorePlugin.fetchCurrentInterface()
-      .then((response:object) => {
+      .then((response:REXUIDefinition) => {
         const uiDefinition = response as REXUIDefinition
 
         console.log(`TEST ${rexCorePlugin.interface.identifier} =? ${uiDefinition.identifier}`)
@@ -150,6 +198,8 @@ export const rexCorePlugin = {
 
           rexCorePlugin.loadInterface(rexCorePlugin.interface)
         }
+      }, (reason:string) => {
+        console.log(`[rex-core] refreshInterface failed: ${reason}`)
       })
   },
   loadInterface: (uiDefinition:REXUIDefinition) => {
