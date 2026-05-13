@@ -156,6 +156,11 @@ export const rexCorePlugin = {
         console.log('configuration')
         console.log(configuration)
 
+        if (!Array.isArray(configuration.ui)) {
+          reject('No valid interfaces are currently available.')
+          return
+        }
+
         const pendingInterfaces:REXUIDefinition[] = []
 
         pendingInterfaces.push(...configuration.ui)
@@ -321,7 +326,7 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
 
         const configUrlStr = configuration['configuration_url'] as string
 
-        const configUrl:URL = new URL(configUrlStr.replaceAll('<IDENTIFIER>', identifier))
+        const configUrl:URL = new URL(configUrlStr.replaceAll('<IDENTIFIER>', encodeURIComponent(identifier)))
 
         fetch(configUrl)
           .then((response: Response) => {
