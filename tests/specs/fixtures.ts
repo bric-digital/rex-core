@@ -23,11 +23,9 @@ export const test = base.extend<{
       ],
     });
 
-    setTimeout(() => {
+    use(context).then(() => {
       context.close();
-    }, 10000)
-
-    await use(context);
+    });
   },
   extensionId: async ({ context }, use) => {
     // for manifest v3:

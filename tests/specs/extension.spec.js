@@ -6,8 +6,18 @@ import { test, expect } from './fixtures.js';
  */
 
 test.describe('REX Core', () => {
+  test.setTimeout(60_000)  
+
   test('Validate extension loaded.', async ({ page, extensionId }) => {
     await page.goto(`chrome-extension://${extensionId}/index.html`);
-    await expect(page).toHaveTitle(/REX Core Test Extension/);
+    await expect(page).toHaveTitle(/REX Core Module Loading Test/);
+
+    await page.waitForTimeout(5500);
+
+    await expect(page).toHaveTitle(/REX Core Module Network Fetch Test/);
+
+    await page.waitForTimeout(11000);    
+
+    await expect(page).toHaveTitle(/REX Core Module Testing Extension/);
   });
 });
