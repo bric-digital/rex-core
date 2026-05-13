@@ -170,7 +170,7 @@ export const rexCorePlugin = {
             // Checked all interfaces - none are valid. Rejecting...
             reject('No valid interfaces are currently available.')
           } else {
-            const nextInterface:REXUIDefinition|undefined = pendingInterfaces.pop()
+            const nextInterface:REXUIDefinition|undefined = pendingInterfaces.shift()
 
             if (nextInterface !== undefined) {
               rexCorePlugin.validateInterface(nextInterface)
