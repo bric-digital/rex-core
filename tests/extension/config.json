@@ -4,6 +4,20 @@
     "ui": [{
         "title": "REX Core Module Testing Extension",
         "identifier": "main",
-        "default": true
+        "default": true,
+        "depends_on": [
+            "did_load",
+            "fetched_network"
+        ]
+    }, {
+        "title": "REX Core Module Network Fetch Test",
+        "identifier": "network_test",
+        "depends_on": [
+            "did_load"
+        ]
+    }, {
+        "title": "REX Core Module Loading Test",
+        "identifier": "time_test",
+        "delay": 5000
     }]
 }

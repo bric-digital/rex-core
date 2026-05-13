@@ -30,6 +30,10 @@ export class REXExtensionModule {
   fetchHtmlInterface(identifier:string):string|null { // eslint-disable-line @typescript-eslint/no-unused-vars
     return null
   }
+
+  name():string {
+    return 'REXExtensionModule'
+  }
 }
 
 const registeredExtensionModules:REXExtensionModule[] = []
@@ -87,69 +91,119 @@ export const rexCorePlugin = {
         requirements.push(...uiDefinition['depends_on'])
       }
 
-      console.log('requirements')
-      console.log(requirements)
-      console.log(uiDefinition)
+      requirements.reverse()
 
-      for (const requirement of requirements) {
-        for (const extensionModule of registeredExtensionModules) {
-          if (extensionModule.checkRequirement !== undefined) {
-            extensionModule.checkRequirement(requirement)
-              .then((isFulfilled) => {
-                while (isFulfilled && requirements.includes(requirement)) {
-                  const index = requirements.indexOf(requirement);
+      const unfulfulledRequirements = [...requirements]
 
-                  requirements.splice(index, 1)
+      const checkRequirement = () => {
+        if (requirements.length == 0) {
+          if (unfulfulledRequirements.length > 0) {
+            reject(`Unfulfilled requirements: ${unfulfulledRequirements}...`)
+          } else {
+            resolve()
+          }
+        } else {
+          const requirement:string|undefined = requirements.pop()
+
+          if (requirement !== undefined) {
+            const pendingModules:REXExtensionModule[] = []
+            pendingModules.push(...registeredExtensionModules)
+
+            const checkModule = () => {
+              if (pendingModules.length == 0) {
+                if (unfulfulledRequirements.length == 0) {
+                  resolve()
+                } else {
+                  reject(`Unfulfilled requirements: ${unfulfulledRequirements}...`)
                 }
-              })
+              } else {
+                const nextModule:REXExtensionModule|undefined = pendingModules.pop()
+
+                if (nextModule !== undefined) {
+                  nextModule.checkRequirement(requirement)
+                    .then((isFulfilled) => {
+                      if (isFulfilled) {
+                        while (unfulfulledRequirements.includes(requirement)) {
+                          const index = unfulfulledRequirements.indexOf(requirement);
+
+                          unfulfulledRequirements.splice(index, 1)
+                        }
+
+                        checkRequirement()
+                      } else {
+                        checkModule()
+                      }
+                    })
+                } else {
+                  checkModule()
+                }
+              }
+            }
+
+            checkModule()
+          } else {
+            checkRequirement()
           }
         }
       }
 
-      window.setTimeout(function() {
-        if (requirements.length == 0) {
-          console.log('ready!')
-          console.log(uiDefinition)
-          resolve()
-        } else {
-          reject(`Unfulfilled requirements: ${requirements}...`)
-     }
-      }, 500)
+      checkRequirement()
     })
   },
   fetchCurrentInterface: async function() {
-    return new Promise<object>((resolve) => {
+    return new Promise<REXUIDefinition>((resolve, reject) => {
       chrome.runtime.sendMessage({
         'messageType': 'fetchConfiguration',
       }).then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
         const configuration = response as REXConfiguration
 
-        console.log('configuration')
-        console.log(configuration)
+        if (Array.isArray(configuration.ui)) {
+          const pendingInterfaces:REXUIDefinition[] = [...configuration.ui]
+          pendingInterfaces.reverse()
 
-        for (const uiDefinition of configuration.ui) {
-          rexCorePlugin.validateInterface(uiDefinition)
-            .then(() => {
-              resolve(uiDefinition)
-            }, (reason:string) => {
-              console.log(`Interface "${uiDefinition.identifier} invalid: ${reason}`)
-            })
+          const checkNextInterface = () => {
+            if (pendingInterfaces.length == 0) {
+              // Checked all interfaces - none are valid. Rejecting...
+              reject('No valid interfaces are currently available.')
+            } else {
+              const nextInterface:REXUIDefinition|undefined = pendingInterfaces.pop()
+
+              if (nextInterface !== undefined) {
+                rexCorePlugin.validateInterface(nextInterface)
+                  .then(() => {
+                    resolve(nextInterface)
+                  }, (reason:string) => {
+                    console.log(`[rex-core] Unable to validate UI ${nextInterface.identifier}: ${reason}`)
+
+                    checkNextInterface()
+                  })
+              } else {
+                checkNextInterface()
+              }
+            }
+          }
+
+          checkNextInterface()
+        } else {
+          reject('[rex-core] Configuration UI element should be an array. Is ${typeof configuration.ui}.')
         }
       })
     })
   },
   refreshInterface: () => {
     rexCorePlugin.fetchCurrentInterface()
-      .then((response:object) => {
+      .then((response:REXUIDefinition) => {
         const uiDefinition = response as REXUIDefinition
 
-        console.log(`TEST ${rexCorePlugin.interface.identifier} =? ${uiDefinition.identifier}`)
+        console.log(`[rex-core] Load interface: ${uiDefinition.identifier}`)
 
         if (rexCorePlugin.interface.identifier !== uiDefinition.identifier) {
           rexCorePlugin.interface = uiDefinition
 
           rexCorePlugin.loadInterface(rexCorePlugin.interface)
         }
+      }, (reason:string) => {
+        console.log(`[rex-core] RefreshInterface failed: ${reason}`)
       })
   },
   loadInterface: (uiDefinition:REXUIDefinition) => {
@@ -162,8 +216,6 @@ export const rexCorePlugin = {
 
       for (const extensionModule of registeredExtensionModules) {
         const content = extensionModule.fetchHtmlInterface(uiDefinition.identifier)
-
-        console.log(`fetchHtmlInterface[${extensionModule}]: ${content}`)
 
         if (content !== null) {
           htmlText = content
@@ -191,8 +243,6 @@ export const rexCorePlugin = {
       }
     } else {
       const templateUrl = chrome.runtime.getURL(`interfaces/${uiDefinition.identifier}.html`)
-
-      console.log(`loadInterface: ${templateUrl}`)
 
       fetch(templateUrl)
         .then((response: Response) => {
@@ -260,9 +310,6 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
       }).then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
         const configuration = response as REXConfiguration
 
-        console.log('configuration')
-        console.log(configuration)
-
         if (configuration === null || configuration === undefined) {
           reject('Configuration not available. Please try again.')
 
@@ -271,14 +318,12 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
 
         const configUrlStr = configuration['configuration_url'] as string
 
-        const configUrl:URL = new URL(configUrlStr.replaceAll('<IDENTIFIER>', identifier))
+        const configUrl:URL = new URL(configUrlStr.replaceAll('<IDENTIFIER>', encodeURIComponent(identifier)))
 
         fetch(configUrl)
           .then((response: Response) => {
             if (response.ok) {
               response.json().then((jsonData:REXConfiguration) => {
-                console.log(`${configUrl}:`)
-                console.log(jsonData)
                 chrome.runtime.sendMessage({
                   'messageType': 'updateConfiguration',
                   'configuration': jsonData
@@ -301,9 +346,6 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
   }
 
   activateInterface(uiDefinition:REXUIDefinition):boolean {
-    console.log('activateInterface')
-    console.log(uiDefinition)
-
     if (uiDefinition.identifier == 'identifier') {
       $('#coreSaveIdentifier').off('click')
       $('#coreSaveIdentifier').on('click', () => {
@@ -340,15 +382,9 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
 
   async checkRequirement(requirement:string) {
     return new Promise<boolean>((resolve) => {
-      console.log(`REXCoreIdentifierExtensionModule.checkRequirement: ${requirement}`)
-
       if (requirement === 'has_identifier') {
         chrome.runtime.sendMessage({ 'messageType': 'getIdentifier' })
           .then((identifier) => {
-            console.log(`identifier: ${identifier}`)
-            console.log(identifier
-
-            )
             if ([null, undefined].includes(identifier) || identifier.length == 0) {
               resolve(false)
             } else {
