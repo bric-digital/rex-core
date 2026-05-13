@@ -2,7 +2,7 @@
     "configuration_url": "config.json",
     "identifier": "rex-core-test",
     "ui": [{
-        "title": "REX Core Module Testing Extension",
+        "title": "REX Core Test Extension",
         "identifier": "main",
         "default": true
     }]
