@@ -157,32 +157,36 @@ export const rexCorePlugin = {
       }).then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
         const configuration = response as REXConfiguration
 
-        const pendingInterfaces:REXUIDefinition[] = [...configuration.ui]
-        pendingInterfaces.reverse()
+        if (Array.isArray(configuration.ui)) {
+          const pendingInterfaces:REXUIDefinition[] = [...configuration.ui]
+          pendingInterfaces.reverse()
 
-        const checkNextInterface = () => {
-          if (pendingInterfaces.length == 0) {
-            // Checked all interfaces - none are valid. Rejecting...
-            reject('No valid interfaces are currently available.')
-          } else {
-            const nextInterface:REXUIDefinition|undefined = pendingInterfaces.pop()
-
-            if (nextInterface !== undefined) {
-              rexCorePlugin.validateInterface(nextInterface)
-                .then(() => {
-                  resolve(nextInterface)
-                }, (reason:string) => {
-                  console.log(`[rex-core] Unable to validate UI ${nextInterface.identifier}: ${reason}`)
-
-                  checkNextInterface()
-                })
+          const checkNextInterface = () => {
+            if (pendingInterfaces.length == 0) {
+              // Checked all interfaces - none are valid. Rejecting...
+              reject('No valid interfaces are currently available.')
             } else {
-              checkNextInterface()
+              const nextInterface:REXUIDefinition|undefined = pendingInterfaces.pop()
+
+              if (nextInterface !== undefined) {
+                rexCorePlugin.validateInterface(nextInterface)
+                  .then(() => {
+                    resolve(nextInterface)
+                  }, (reason:string) => {
+                    console.log(`[rex-core] Unable to validate UI ${nextInterface.identifier}: ${reason}`)
+
+                    checkNextInterface()
+                  })
+              } else {
+                checkNextInterface()
+              }
             }
           }
-        }
 
-        checkNextInterface()
+          checkNextInterface()
+        } else {
+          reject('[rex-core] Configuration UI element should be an array. Is ${typeof configuration.ui}.')
+        }
       })
     })
   },
@@ -314,7 +318,7 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
 
         const configUrlStr = configuration['configuration_url'] as string
 
-        const configUrl:URL = new URL(configUrlStr.replaceAll('<IDENTIFIER>', identifier))
+        const configUrl:URL = new URL(configUrlStr.replaceAll('<IDENTIFIER>', encodeURIComponent(identifier)))
 
         fetch(configUrl)
           .then((response: Response) => {
