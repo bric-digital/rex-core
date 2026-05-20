@@ -17,7 +17,6 @@
         ]
     }, {
         "title": "REX Core Module Loading Test",
-        "identifier": "time_test",
-        "delay": 5000
+        "identifier": "time_test"
     }]
 }
