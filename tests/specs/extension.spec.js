@@ -11,13 +11,15 @@ test.describe('REX Core', () => {
   test('Validate extension loaded.', async ({ page, extensionId }) => {
     await page.goto(`chrome-extension://${extensionId}/index.html`);
 
+    await page.waitForTimeout(2500);
+
     await expect(page).toHaveTitle(/REX Core Module Loading Test/);
 
-    await page.waitForTimeout(5500);
+    await page.waitForTimeout(5000);
 
     await expect(page).toHaveTitle(/REX Core Module Network Fetch Test/);
 
-    await page.waitForTimeout(11000);    
+    await page.waitForTimeout(10000);    
 
     await expect(page).toHaveTitle(/REX Core Module Testing Extension/);
   });
