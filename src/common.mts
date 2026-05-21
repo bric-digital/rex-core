@@ -11,11 +11,15 @@ export interface REXConfiguration {
   [key: string]: any // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
-export function sha256(cleartext:string):Promise<string> {
+export function hash(cleartext:string, algorithm: string):Promise<string> {
+  if (algorithm === undefined) {
+    algorithm = 'SHA-256'
+  }
+
   return new Promise<string>((resolve) => {
     const msgUint8 = new TextEncoder().encode(cleartext); // encode as (utf-8) Uint8Array
 
-    crypto.subtle.digest('SHA-256', msgUint8).then((hashBuffer) => {
+    crypto.subtle.digest(algorithm, msgUint8).then((hashBuffer) => {
       const hexBytes = new Uint8Array(hashBuffer)
 
       const hashHex = Array.from(hexBytes, (byte) => 
@@ -25,4 +29,12 @@ export function sha256(cleartext:string):Promise<string> {
       resolve(hashHex)
     })
   })
+}
+
+export function sha256(cleartext:string):Promise<string> {
+  return hash(cleartext, 'SHA-256')
+}
+
+export function sha512(cleartext:string):Promise<string> {
+  return hash(cleartext, 'SHA-512')
 }

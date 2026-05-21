@@ -26,7 +26,7 @@ test('Service worker test: Set identifier', async ({serviceWorker}) => {
   })
 })
 
-test('Service worker test: Hash generation', async ({serviceWorker}) => {
+test('Service worker test: Hash generation (default)', async ({serviceWorker}) => {
   return new Promise<void>((resolve) => {
     setTimeout(() => {
       return new Promise<any>((testResolve) => {
@@ -40,6 +40,50 @@ test('Service worker test: Hash generation', async ({serviceWorker}) => {
         })
         .then((workerResponse) => {
           expect(workerResponse).toEqual('b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9')
+
+          resolve()
+        })
+      })
+    }, 1000)
+  })
+})
+
+test('Service worker test: Hash generation (SHA-256)', async ({serviceWorker}) => {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      return new Promise<any>((testResolve) => {
+        serviceWorker.evaluate(async () => {
+          return new Promise<any>((testResolve) => {
+            self.rexCorePlugin.generateHash('hello world', 'SHA-256')
+            .then((hashString:string) => {
+              testResolve(hashString)
+            })
+          })
+        })
+        .then((workerResponse) => {
+          expect(workerResponse).toEqual('b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9')
+
+          resolve()
+        })
+      })
+    }, 1000)
+  })
+})
+
+test('Service worker test: Hash generation (SHA-512)', async ({serviceWorker}) => {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      return new Promise<any>((testResolve) => {
+        serviceWorker.evaluate(async () => {
+          return new Promise<any>((testResolve) => {
+            self.rexCorePlugin.generateHash('hello world', 'SHA-512')
+            .then((hashString:string) => {
+              testResolve(hashString)
+            })
+          })
+        })
+        .then((workerResponse) => {
+          expect(workerResponse).toEqual('309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f')
 
           resolve()
         })

@@ -1,4 +1,4 @@
-import { type REXConfiguration, sha256 } from "./common.mjs"
+import { type REXConfiguration, hash } from "./common.mjs"
 
 export interface EventPayload {
   'name':string,
@@ -97,7 +97,6 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       }
     })
 
-    console.log('chrome.windows.create')
     chrome.windows.create({
       height: 480,
       width: 640,
@@ -452,8 +451,8 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     })
   },
 
-  generateHash: (cleartext:string): Promise<string> => {
-    return sha256(cleartext)
+  generateHash: (cleartext:string, algorithm:string|undefined): Promise<string> => {
+    return hash(cleartext, algorithm)
   }
 }
 
