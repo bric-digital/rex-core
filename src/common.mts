@@ -11,7 +11,7 @@ export interface REXConfiguration {
   [key: string]: any // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
-export function hash(cleartext:string, algorithm: string):Promise<string> {
+export function hash(cleartext:string, algorithm: string|undefined):Promise<string> {
   if (algorithm === undefined) {
     algorithm = 'SHA-256'
   }
