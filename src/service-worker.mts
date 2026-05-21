@@ -450,8 +450,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
         })
     })
   },
-
-  generateHash: (cleartext:string, algorithm:string|undefined): Promise<string> => {
+  generateHash: (cleartext:string, algorithm:string = 'SHA-256'): Promise<string> => {
     return hash(cleartext, algorithm)
   }
 }
