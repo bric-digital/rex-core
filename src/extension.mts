@@ -291,6 +291,14 @@ export const rexCorePlugin = {
   showError: (title:string, message:string) => {
     // TODO: Replace with something more robust.
     alert(`${title}\n\n${message}`)
+  }, fetchREXModule: (identifier:string): REXExtensionModule|null => {
+    for (const rexModule of registeredExtensionModules) {
+      if (identifier === rexModule.name()) {
+        return rexModule
+      }
+    }
+
+    return null
   }
 }
 
@@ -303,7 +311,11 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
     return true
   }
 
-  async validateIdentifier(identifier:string) {
+  name():string {
+    return 'REXCoreIdentifierExtensionModule'
+  }
+
+  async validateIdentifier(identifier:string, endpoint:string|null = null) {
     return new Promise<string>((resolve, reject) => {
       chrome.runtime.sendMessage({
         'messageType': 'fetchConfiguration',
@@ -316,30 +328,36 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
           return
         }
 
-        const configUrlStr = configuration['configuration_url'] as string
+        if (endpoint === null) {
+          endpoint = configuration['configuration_url'] as string
+        }
 
-        const configUrl:URL = new URL(configUrlStr.replaceAll('<IDENTIFIER>', encodeURIComponent(identifier)))
+        const configUrl:URL = new URL(endpoint.replaceAll('<IDENTIFIER>', encodeURIComponent(identifier)))
 
         fetch(configUrl)
           .then((response: Response) => {
             if (response.ok) {
-              response.json().then((jsonData:REXConfiguration) => {
-                chrome.runtime.sendMessage({
-                  'messageType': 'updateConfiguration',
-                  'configuration': jsonData
-                }).then((response: string) => {
-                  if (response === null || response === undefined || response.toLowerCase().startsWith('error')) {
-                    reject(`Received error from service worker: ${response}`)
-                  } else {
-                    resolve(identifier)
-                  }
+              response.json()
+                .then((jsonData:REXConfiguration) => {
+                  chrome.runtime.sendMessage({
+                    'messageType': 'updateConfiguration',
+                    'configuration': jsonData
+                  }).then((response: string) => {
+                    if (response === null || response === undefined || response.toLowerCase().startsWith('error')) {
+                      reject(`Received error from service worker: ${response}`)
+                    } else {
+                      resolve(identifier)
+                    }
+                  })
                 })
-              })
+                .catch((error) => {
+                  reject(`Received non-JSON response: ${error}`)
+                })
           } else {
             reject(`Received error status: ${response.statusText}`)
           }
         }, (reason:string) => {
-          reject(`${reason}`)
+          reject(`Error fetching configuration from ${configUrl}:${reason}`)
         })
       })
     })

@@ -10,6 +10,8 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 import { type REXUIDefinition } from '@bric/rex-core/common'
 import { rexCorePlugin, REXExtensionModule, registerREXModule } from '@bric/rex-core/extension'
 
+self['rexCorePlugin'] = rexCorePlugin
+
 rexCorePlugin.loadInitialConfigation('config.json')
   .then(function(result) {
     rexCorePlugin.refreshInterface()
