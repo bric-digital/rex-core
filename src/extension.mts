@@ -231,6 +231,8 @@ export const rexCorePlugin = {
 
         for (const extensionModule of registeredExtensionModules) {
           if (extensionModule.activateInterface !== undefined) {
+            console.log(`[rex-core] Activating interface (dynamic) with ${extensionModule}: ${JSON.stringify(uiDefinition)}`)
+
             if (extensionModule.activateInterface(uiDefinition)) {
               activated = true
             }
@@ -256,6 +258,8 @@ export const rexCorePlugin = {
 
               for (const extensionModule of registeredExtensionModules) {
                 if (extensionModule.activateInterface !== undefined) {
+                  console.log(`[rex-core] Activating interface (static) with ${extensionModule}: ${JSON.stringify(uiDefinition)}`)
+                  
                   if (extensionModule.activateInterface(uiDefinition)) {
                     activated = true
                   }
