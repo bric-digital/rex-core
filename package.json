@@ -49,7 +49,7 @@
         "jquery": "^4.0.0",
         "psl": "^1.15.0",
         "typescript": "^6.0.3",
-        "typescript-eslint": "^8.61.0"
+        "typescript-eslint": "^8.61.1"
     },
     "devDependencies": {
         "express": "^5.2.1"
