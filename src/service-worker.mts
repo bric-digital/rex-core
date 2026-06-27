@@ -109,6 +109,18 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
 
     chrome.runtime.onInstalled.addListener(function (details:object) { // eslint-disable-line @typescript-eslint/no-unused-vars
       console.log(`[rex-core] chrome.runtime.onInstalled.addListener`)
+
+      // Record the install time once, the first time it is seen. Stored here so
+      // every extension has it via the getInstallTime message instead of each
+      // study extension recording its own. Set-if-absent so updates/reloads
+      // never overwrite the original install timestamp.
+      chrome.storage.local.get('rexInstallTime')
+        .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+          if (response.rexInstallTime === undefined) {
+            chrome.storage.local.set({ rexInstallTime: Date.now() })
+          }
+        })
+
       rexCorePlugin.openExtensionWindow()
     })
 
@@ -261,6 +273,15 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
         .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
           const idResponse:REXIdentifierResponse = response as REXIdentifierResponse
           sendResponse(idResponse.rexIdentifier)
+        })
+
+      return true
+    }
+
+    if (message.messageType == 'getInstallTime') {
+      chrome.storage.local.get('rexInstallTime')
+        .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+          sendResponse(response.rexInstallTime ?? null)
         })
 
       return true
