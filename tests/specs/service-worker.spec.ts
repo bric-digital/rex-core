@@ -26,6 +26,32 @@ test('Service worker test: Set identifier', async ({serviceWorker}) => {
   })
 })
 
+test('Service worker test: Local configuration mode refreshes without a fetch', async ({serviceWorker}) => {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      serviceWorker.evaluate(async () => {
+        return new Promise<any>((testResolve) => {
+          const localConfig = { configuration_url: 'local', sample_module: { enabled: true } }
+
+          self.rexCorePlugin.updateConfiguration(localConfig)
+            .then(() => {
+              self.rexCorePlugin.handleMessage({
+                'messageType': 'refreshConfiguration'
+              }, this, (response:any) => {
+                testResolve(response)
+              })
+            })
+        })
+      })
+      .then((workerResponse) => {
+        expect(workerResponse).toMatchObject({ configuration_url: 'local', sample_module: { enabled: true } })
+
+        resolve()
+      })
+    }, 2500)
+  })
+})
+
 test('Service worker test: Hash generation (default)', async ({serviceWorker}) => {
   return new Promise<void>((resolve) => {
     setTimeout(() => {

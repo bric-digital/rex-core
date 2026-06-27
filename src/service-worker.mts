@@ -206,12 +206,24 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           console.log('[rex-core] Fetched configuration:')
           console.log(configuration)
 
+          const configUrlStr = configuration['configuration_url'] as string
+
+          if (configUrlStr === 'local') {
+            // Local configuration mode: the bundled configuration is authoritative
+            // and there is no server to fetch from, so re-apply it to the modules.
+            for (const extensionModule of registeredExtensionModules) {
+              extensionModule.refreshConfiguration()
+            }
+
+            sendResponse(configuration)
+
+            return
+          }
+
           chrome.storage.local.get('rexIdentifier')
             .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
               const idResponse:REXIdentifierResponse = response as REXIdentifierResponse
               const identifier = idResponse.rexIdentifier
-
-              const configUrlStr = configuration['configuration_url'] as string
 
               const configUrl:URL = new URL(configUrlStr.replaceAll('<IDENTIFIER>', identifier))
 
