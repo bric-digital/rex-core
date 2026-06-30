@@ -26,12 +26,15 @@ test('Service worker test: Set identifier', async ({serviceWorker}) => {
   })
 })
 
-test('Service worker test: Local configuration mode refreshes without a fetch', async ({serviceWorker}) => {
+test('Service worker test: Local configuration mode fetches the bundled config', async ({serviceWorker}) => {
   return new Promise<void>((resolve) => {
     setTimeout(() => {
       serviceWorker.evaluate(async () => {
         return new Promise<any>((testResolve) => {
-          const localConfig = { configuration_url: 'local', sample_module: { enabled: true } }
+          // Point at the bundled config.json via the rex-config:// scheme. This
+          // resolves to a chrome-extension:// URL and is fetched from the bundle
+          // with no remote server involved.
+          const localConfig = { configuration_url: 'rex-config:///config.json' }
 
           self.rexCorePlugin.updateConfiguration(localConfig)
             .then(() => {
@@ -44,7 +47,7 @@ test('Service worker test: Local configuration mode refreshes without a fetch', 
         })
       })
       .then((workerResponse) => {
-        expect(workerResponse).toMatchObject({ configuration_url: 'local', sample_module: { enabled: true } })
+        expect(workerResponse).toMatchObject({ identifier: 'rex-core-test' })
 
         resolve()
       })
