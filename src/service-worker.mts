@@ -80,6 +80,24 @@ export function dispatchEvent(event:EventPayload) {
   }
 }
 
+// Resolves a configured configuration_url to a fetchable URL. A rex-config://
+// URL points at a configuration bundled in the extension and is rewritten to a
+// chrome-extension:// URL, allowing a fully local (serverless) setup with no
+// remote fetch. Any other URL is treated as remote and has its <IDENTIFIER>
+// token substituted as before.
+function resolveConfigurationUrl(configUrlStr:string, identifier:string):string {
+  if (configUrlStr.startsWith('rex-config://')) {
+    const path = configUrlStr.replace('rex-config://', '').replace(/^\/+/, '')
+    const resolved = chrome.runtime.getURL(path)
+
+    console.log(`[rex-core] Using local bundled configuration: ${resolved}`)
+
+    return resolved
+  }
+
+  return configUrlStr.replaceAll('<IDENTIFIER>', identifier)
+}
+
 let rexDatabase:IDBDatabase|null = null
 
 const rexCorePlugin = { // TODO rename to "engine" or something...
@@ -218,14 +236,14 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           console.log('[rex-core] Fetched configuration:')
           console.log(configuration)
 
+          const configUrlStr = configuration['configuration_url'] as string
+
           chrome.storage.local.get('rexIdentifier')
             .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
               const idResponse:REXIdentifierResponse = response as REXIdentifierResponse
               const identifier = idResponse.rexIdentifier
 
-              const configUrlStr = configuration['configuration_url'] as string
-
-              const configUrl:URL = new URL(configUrlStr.replaceAll('<IDENTIFIER>', identifier))
+              const configUrl:URL = new URL(resolveConfigurationUrl(configUrlStr, identifier))
 
               fetch(configUrl)
                 .then((response: Response) => {
