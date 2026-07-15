@@ -24,16 +24,16 @@ export function registerREXModule(rexModule:REXClientModule) {
   rexModule.setup()
 }
 
-const SELECTOR_CACHE = {}
+const SELECTOR_CACHE:{[key: string]:boolean} = {}
 
 export function injectREXSelectors() {
   $.expr.pseudos.containsInsensitive = $.expr.createPseudo(function (query) {
-    const key = `${query}`
+    const key:string = `${query}`
 
     return function (elem) {
-      let containsString = SELECTOR_CACHE[key]
+      let containsString:boolean|undefined = SELECTOR_CACHE[key]
 
-      if (containsString === undefined) {
+      if (containsString !== undefined) {
         return containsString
       }
 
