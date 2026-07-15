@@ -24,24 +24,13 @@ export function registerREXModule(rexModule:REXClientModule) {
   rexModule.setup()
 }
 
-const SELECTOR_CACHE:{[key: string]:boolean} = {}
-
 export function injectREXSelectors() {
   $.expr.pseudos.containsInsensitive = $.expr.createPseudo(function (query) {
     const key:string = `${query}`
 
     return function (elem) {
-      let containsString:boolean|undefined = SELECTOR_CACHE[key]
-
-      if (containsString !== undefined) {
-        return containsString
-      }
-
-      containsString = $(elem).text().toUpperCase().includes(query.toUpperCase())
-
-      SELECTOR_CACHE[key] = containsString
-
-      return containsString
+      return elem.innerHTML.toUpperCase().includes(query.toUpperCase())
+      // return $(elem).text().toUpperCase().includes(query.toUpperCase())
     }
   })
 
