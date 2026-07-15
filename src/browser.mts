@@ -37,8 +37,6 @@ export function injectREXSelectors() {
 
       if (oGElement.REX_CACHE[key] === undefined) {
         oGElement.REX_CACHE[key] = $(elem).text().toUpperCase().includes(query.toUpperCase())
-      } else {
-        console.log(`CACHE HIT FOR: ${query}`)
       }
 
       return oGElement.REX_CACHE[key]
