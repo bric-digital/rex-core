@@ -26,10 +26,10 @@ export function registerREXModule(rexModule:REXClientModule) {
 
 export function injectREXSelectors() {
   $.expr.pseudos.containsInsensitive = $.expr.createPseudo(function (query) {
-    const queryUpper = query.toUpperCase()
+    // const queryUpper = query.toUpperCase()
 
     return function (elem) {
-      return $(elem).text().toUpperCase().includes(queryUpper)
+      return false // $(elem).text().toUpperCase().includes(queryUpper)
     }
   })
 
