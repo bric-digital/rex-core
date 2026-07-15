@@ -26,9 +26,20 @@ export function registerREXModule(rexModule:REXClientModule) {
 
 export function injectREXSelectors() {
   $.expr.pseudos.containsInsensitive = $.expr.createPseudo(function (query) {
+    const key = `${query}`
+
     return function (elem) {
-      return elem.innerHTML.toUpperCase().includes(query.toUpperCase())
-      // return $(elem).text().toUpperCase().includes(query.toUpperCase())
+      const oGElement:any = (elem as any)
+
+      if (oGElement.REX_CACHE === undefined) {
+        oGElement.REX_CACHE = {}
+      }
+
+      if (oGElement.REX_CACHE[key] === undefined) {
+        oGElement.REX_CACHE[key] = $(elem).text().toUpperCase().includes(query.toUpperCase())
+      }
+
+      return oGElement.REX_CACHE[key]
     }
   })
 
