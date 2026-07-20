@@ -43,7 +43,7 @@
         "bootstrap-icons": "^1.13.1",
         "chrome-types": "^0.1.431",
         "esbuild": "^0.28.1",
-        "eslint": "^10.6.0",
+        "eslint": "^10.7.0",
         "globals": "^17.7.0",
         "jiti": "^2.7.0",
         "jquery": "^4.0.0",
