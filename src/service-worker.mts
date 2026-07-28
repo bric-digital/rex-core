@@ -159,7 +159,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           chrome.scripting.executeScript({
             target: {
             tabId: tabId,
-            allFrames: true
+            allFrames: false // TODO: Review whether this caused any unintended side-effects. Potentially move to configuration.
             },
             files: ['/js/browser/bundle.js']
           }, function (result) { // eslint-disable-line @typescript-eslint/no-unused-vars
