@@ -55,6 +55,40 @@ test('Service worker test: Local configuration mode fetches the bundled config',
   })
 })
 
+// A phase-transition style config change arrives via updateConfiguration (not
+// the refreshConfiguration message), e.g. from rex-autorunner. Modules that
+// read configuration once at worker startup must still be told to re-read, or
+// the new configuration sits inert in storage until the next worker restart.
+test('Service worker test: updateConfiguration notifies registered modules', async ({serviceWorker}) => {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      serviceWorker.evaluate(async () => {
+        return new Promise<any>((testResolve) => {
+          const stubModule = {
+            refreshed: false,
+            setup() {},
+            logEvent() {},
+            moduleName() { return 'StubModule' },
+            refreshConfiguration() { this.refreshed = true },
+          }
+
+          self.registerREXModule(stubModule)
+
+          self.rexCorePlugin.updateConfiguration({ stub: { enabled: true } })
+            .then(() => {
+              testResolve(stubModule.refreshed)
+            })
+        })
+      })
+      .then((workerResponse) => {
+        expect(workerResponse).toEqual(true)
+
+        resolve()
+      })
+    }, 2500)
+  })
+})
+
 test('Service worker test: Hash generation (default)', async ({serviceWorker}) => {
   return new Promise<void>((resolve) => {
     setTimeout(() => {

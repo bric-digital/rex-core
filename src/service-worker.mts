@@ -476,6 +476,15 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       chrome.storage.local.set({
         REXConfiguration: configuration
       }).then(() => {
+        // Configuration can change mid-worker-life without the
+        // refreshConfiguration message (e.g. a lifecycle engine applying a
+        // phase config). Modules that read configuration once at startup must
+        // be told to re-read, or the new configuration sits inert in storage
+        // until the next worker restart.
+        for (const extensionModule of registeredExtensionModules) {
+          extensionModule.refreshConfiguration()
+        }
+
         resolve('Success: Configuration updated.')
       })
     })
