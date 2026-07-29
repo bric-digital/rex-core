@@ -154,3 +154,110 @@ test('Service worker test: Hash generation (SHA-512)', async ({serviceWorker}) =
     }, 1000)
   })
 })
+
+// Configuration scope: client-defined key/value pairs appended as query
+// parameters to every remote configuration fetch. Lets a client scope config
+// resolution (e.g. by study or cohort) without rex-core knowing the vocabulary.
+test('Service worker test: configuration scope merges, deletes, and persists', async ({serviceWorker}) => {
+  const scope = await serviceWorker.evaluate(async () => {
+    await new Promise((ready) => self.setTimeout(ready, 1500))
+
+    await new Promise((set) => {
+      self.rexCorePlugin.handleMessage({
+        'messageType': 'setConfigurationScope',
+        'scope': { 'study': 'demo-study', 'cohort': 'a' }
+      }, this, set)
+    })
+
+    // Merge a change and a deletion in one call.
+    await new Promise((set) => {
+      self.rexCorePlugin.handleMessage({
+        'messageType': 'setConfigurationScope',
+        'scope': { 'cohort': null, 'wave': '2' }
+      }, this, set)
+    })
+
+    return new Promise((fetched) => {
+      self.rexCorePlugin.handleMessage({
+        'messageType': 'fetchConfigurationScope'
+      }, this, fetched)
+    })
+  })
+
+  expect(scope).toEqual({ 'study': 'demo-study', 'wave': '2' })
+})
+
+test('Service worker test: refreshConfiguration appends the scope to the fetch url', async ({serviceWorker}) => {
+  const requestedUrl = await serviceWorker.evaluate(async () => {
+    await new Promise((ready) => self.setTimeout(ready, 1500))
+
+    await new Promise((set) => {
+      self.rexCorePlugin.handleMessage({
+        'messageType': 'setConfigurationScope',
+        'scope': { 'study': 'demo study' }
+      }, this, set)
+    })
+
+    await self.rexCorePlugin.updateConfiguration({
+      configuration_url: 'https://config.example.test/app-config.json?identifier=<IDENTIFIER>'
+    })
+
+    // Spy on fetch: capture the URL refreshConfiguration requests without any
+    // network. The response echoes a minimal valid configuration.
+    const realFetch = self.fetch
+    let captured = null
+    self.fetch = (url) => {
+      captured = `${url}`
+      return Promise.resolve(new Response(JSON.stringify({ refreshed: true }), { status: 200 }))
+    }
+
+    await new Promise((refreshed) => {
+      self.rexCorePlugin.handleMessage({
+        'messageType': 'refreshConfiguration'
+      }, this, refreshed)
+    })
+
+    self.fetch = realFetch
+
+    return captured
+  })
+
+  expect(requestedUrl).toContain('study=demo%20study')
+})
+
+test('Service worker test: a scope key already present in the url is not overridden', async ({serviceWorker}) => {
+  const requestedUrl = await serviceWorker.evaluate(async () => {
+    await new Promise((ready) => self.setTimeout(ready, 1500))
+
+    await new Promise((set) => {
+      self.rexCorePlugin.handleMessage({
+        'messageType': 'setConfigurationScope',
+        'scope': { 'study': 'scope-study' }
+      }, this, set)
+    })
+
+    await self.rexCorePlugin.updateConfiguration({
+      configuration_url: 'https://config.example.test/app-config.json?study=url-study&identifier=<IDENTIFIER>'
+    })
+
+    const realFetch = self.fetch
+    let captured = null
+    self.fetch = (url) => {
+      captured = `${url}`
+      return Promise.resolve(new Response(JSON.stringify({ refreshed: true }), { status: 200 }))
+    }
+
+    await new Promise((refreshed) => {
+      self.rexCorePlugin.handleMessage({
+        'messageType': 'refreshConfiguration'
+      }, this, refreshed)
+    })
+
+    self.fetch = realFetch
+
+    return captured
+  })
+
+  expect(requestedUrl).toContain('study=url-study')
+  expect(requestedUrl).not.toContain('scope-study')
+})
