@@ -459,7 +459,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
         .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
           const configResponse:REXConfigurationResponse = response as REXConfigurationResponse
 
-          if (configResponse.REXConfiguration !== undefined) {
+          if ([null, undefined, ''].includes(configResponse.REXConfiguration as any) === false) {
             resolve('Error: Configuration already initialized.')
           } else {
             chrome.storage.local.set({
