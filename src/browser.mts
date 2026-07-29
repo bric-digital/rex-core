@@ -29,7 +29,7 @@ export function injectREXSelectors() {
     const key = `${query}`
 
     return function (elem) {
-      const oGElement:any = (elem as any)
+      const oGElement:any = (elem as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
       if (oGElement.REX_CACHE === undefined) {
         oGElement.REX_CACHE = {}
