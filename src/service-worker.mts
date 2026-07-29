@@ -159,7 +159,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           chrome.scripting.executeScript({
             target: {
             tabId: tabId,
-            allFrames: true
+            allFrames: false // TODO: Review whether this caused any unintended side-effects. Potentially move to configuration.
             },
             files: ['/js/browser/bundle.js']
           }, function (result) { // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -459,7 +459,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
         .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
           const configResponse:REXConfigurationResponse = response as REXConfigurationResponse
 
-          if (configResponse.REXConfiguration !== undefined) {
+          if ([null, undefined, ''].includes(configResponse.REXConfiguration as any) === false) { // eslint-disable-line @typescript-eslint/no-explicit-any
             resolve('Error: Configuration already initialized.')
           } else {
             chrome.storage.local.set({
