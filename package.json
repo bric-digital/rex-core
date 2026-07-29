@@ -1,6 +1,6 @@
 {
     "name": "@bric/rex-core",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "description": "Core REX module providing services to other REX modules.",
     "keywords": [
         "extension",
@@ -27,12 +27,15 @@
         "lint": "eslint src",
         "pretest": "node tests/scripts/build-test-bundle.js",
         "test": "playwright test",
+        "pretest:ci": "node tests/scripts/build-test-bundle.js",
         "test:ci": "playwright test --reporter=dot",
         "test:debug": "playwright test --debug",
         "test:headed": "playwright test --headed",
         "test:ui": "playwright test --ui",
         "test:unit": "playwright test specs/",
-        "server": "node tests/scripts/run-server.js"
+        "server": "node tests/scripts/run-server.js",
+        "release:tag": "node scripts/tag-release.mjs",
+        "publish:github-release": "node scripts/publish-github-release.mjs"
     },
     "dependencies": {
         "@eslint/js": "^10.0.1",

@@ -1,0 +1,105 @@
+name: CI
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build_test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build code
+        run: npm run build
+
+      - name: Lint code
+        run: npm run lint
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test code
+        run: npm run test:ci
+
+      - name: Upload Playwright HTML report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: playwright-report/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload Playwright test results
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: test-results-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: test-results/
+          if-no-files-found: warn
+          retention-days: 30
+
+  tag_release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build_test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Publish GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/publish-github-release.mjs
+
+  main_build:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build_test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Publish rolling main build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_CHANNEL: main
+        run: node scripts/publish-github-release.mjs
