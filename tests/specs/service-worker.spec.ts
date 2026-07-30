@@ -222,7 +222,9 @@ test('Service worker test: refreshConfiguration appends the scope to the fetch u
     return captured
   })
 
-  expect(requestedUrl).toContain('study=demo%20study')
+  // URLSearchParams encodes a space as '+', not '%20'. Both are valid; this
+  // asserts the URL API's escaping rather than hand-rolled encodeURIComponent.
+  expect(requestedUrl).toContain('study=demo+study')
 })
 
 test('Service worker test: a scope key already present in the url is not overridden', async ({serviceWorker}) => {
@@ -260,4 +262,45 @@ test('Service worker test: a scope key already present in the url is not overrid
 
   expect(requestedUrl).toContain('study=url-study')
   expect(requestedUrl).not.toContain('scope-study')
+})
+
+// A configuration_url may be a bare relative path rather than an absolute URL
+// (the bundled test config uses 'config.json'). Scoping resolves it against the
+// extension and leaves it unscoped, rather than failing to parse it as a URL.
+test('Service worker test: a relative configuration url stays extension-local and unscoped', async ({serviceWorker}) => {
+  const requestedUrl = await serviceWorker.evaluate(async () => {
+    await new Promise((ready) => self.setTimeout(ready, 1500))
+
+    await new Promise((set) => {
+      self.rexCorePlugin.handleMessage({
+        'messageType': 'setConfigurationScope',
+        'scope': { 'study': 'demo-study' }
+      }, this, set)
+    })
+
+    await self.rexCorePlugin.updateConfiguration({
+      configuration_url: 'config.json'
+    })
+
+    const realFetch = self.fetch
+    let captured = null
+    self.fetch = (url) => {
+      captured = `${url}`
+      return Promise.resolve(new Response(JSON.stringify({ refreshed: true }), { status: 200 }))
+    }
+
+    await new Promise((refreshed) => {
+      self.rexCorePlugin.handleMessage({
+        'messageType': 'refreshConfiguration'
+      }, this, refreshed)
+    })
+
+    self.fetch = realFetch
+
+    return captured
+  })
+
+  expect(requestedUrl).toContain('chrome-extension://')
+  expect(requestedUrl).toContain('config.json')
+  expect(requestedUrl).not.toContain('study=')
 })

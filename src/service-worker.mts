@@ -104,24 +104,31 @@ const CONFIGURATION_SCOPE_STORAGE_KEY = 'rexConfigurationScope'
 // configuration URL. The scope vocabulary is client-defined (a study id, a
 // cohort, ...) — rex-core only transports it. A key already present in the URL
 // is left alone: an explicitly configured parameter wins over the stored scope.
-// Local rex-config:// URLs resolve to chrome-extension:// and are never scoped.
-function appendConfigurationScope(configUrlStr:string, scope:{ [key: string]: string }):string {
-  if (configUrlStr.startsWith('chrome-extension://')) {
-    return configUrlStr
+// Scoping goes through URLSearchParams rather than string concatenation, so
+// separator and escaping handling belong to the URL API, not to this function.
+//
+// Only remote http(s) configurations are scoped. A configuration_url may also be
+// an already-resolved chrome-extension:// URL (from rex-config://) or a bare
+// relative path ('config.json'); both are extension-local and need no scope. The
+// relative path is resolved against the extension base, matching how the
+// extension context treats a non-http configuration path.
+function appendConfigurationScope(configUrlStr:string, scope:{ [key: string]: string }):URL {
+  const lowerUrlStr = configUrlStr.toLowerCase()
+
+  if (!lowerUrlStr.startsWith('http://') && !lowerUrlStr.startsWith('https://')) {
+    return new URL(configUrlStr, chrome.runtime.getURL('/'))
   }
 
-  let scopedUrl = configUrlStr
+  const scopedUrl = new URL(configUrlStr)
 
   for (const scopeKey of Object.keys(scope)) {
     const scopeValue = scope[scopeKey]
 
-    if (scopeValue === undefined || new URL(scopedUrl).searchParams.has(scopeKey)) {
+    if (scopeValue === undefined || scopedUrl.searchParams.has(scopeKey)) {
       continue
     }
 
-    const separator = scopedUrl.includes('?') ? '&' : '?'
-
-    scopedUrl = `${scopedUrl}${separator}${encodeURIComponent(scopeKey)}=${encodeURIComponent(scopeValue)}`
+    scopedUrl.searchParams.set(scopeKey, scopeValue)
   }
 
   return scopedUrl
@@ -291,7 +298,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
               const identifier = idResponse.rexIdentifier
               const configurationScope = (response[CONFIGURATION_SCOPE_STORAGE_KEY] as { [key: string]: string } | undefined) ?? {}
 
-              const configUrl:URL = new URL(appendConfigurationScope(resolveConfigurationUrl(configUrlStr, identifier), configurationScope))
+              const configUrl:URL = appendConfigurationScope(resolveConfigurationUrl(configUrlStr, identifier), configurationScope)
 
               fetch(configUrl)
                 .then((response: Response) => {
