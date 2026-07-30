@@ -1,4 +1,4 @@
-import { type REXConfiguration, hash } from "./common.mjs"
+import { type REXConfiguration, hash, scopeConfigurationUrl } from "./common.mjs"
 
 export interface EventPayload {
   'name':string,
@@ -99,40 +99,6 @@ function resolveConfigurationUrl(configUrlStr:string, identifier:string):string 
 }
 
 const CONFIGURATION_SCOPE_STORAGE_KEY = 'rexConfigurationScope'
-
-// Appends configuration-scope entries as query parameters to a resolved remote
-// configuration URL. The scope vocabulary is client-defined (a study id, a
-// cohort, ...) — rex-core only transports it. A key already present in the URL
-// is left alone: an explicitly configured parameter wins over the stored scope.
-// Scoping goes through URLSearchParams rather than string concatenation, so
-// separator and escaping handling belong to the URL API, not to this function.
-//
-// Only remote http(s) configurations are scoped. A configuration_url may also be
-// an already-resolved chrome-extension:// URL (from rex-config://) or a bare
-// relative path ('config.json'); both are extension-local and need no scope. The
-// relative path is resolved against the extension base, matching how the
-// extension context treats a non-http configuration path.
-function appendConfigurationScope(configUrlStr:string, scope:{ [key: string]: string }):URL {
-  const lowerUrlStr = configUrlStr.toLowerCase()
-
-  if (!lowerUrlStr.startsWith('http://') && !lowerUrlStr.startsWith('https://')) {
-    return new URL(configUrlStr, chrome.runtime.getURL('/'))
-  }
-
-  const scopedUrl = new URL(configUrlStr)
-
-  for (const scopeKey of Object.keys(scope)) {
-    const scopeValue = scope[scopeKey]
-
-    if (scopeValue === undefined || scopedUrl.searchParams.has(scopeKey)) {
-      continue
-    }
-
-    scopedUrl.searchParams.set(scopeKey, scopeValue)
-  }
-
-  return scopedUrl
-}
 
 let rexDatabase:IDBDatabase|null = null
 
@@ -298,7 +264,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
               const identifier = idResponse.rexIdentifier
               const configurationScope = (response[CONFIGURATION_SCOPE_STORAGE_KEY] as { [key: string]: string } | undefined) ?? {}
 
-              const configUrl:URL = appendConfigurationScope(resolveConfigurationUrl(configUrlStr, identifier), configurationScope)
+              const configUrl:URL = scopeConfigurationUrl(resolveConfigurationUrl(configUrlStr, identifier), configurationScope, chrome.runtime.getURL('/'))
 
               fetch(configUrl)
                 .then((response: Response) => {
@@ -557,7 +523,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     return hash(cleartext, algorithm)
   },
   // Configuration scope: persisted client-defined key/value pairs appended to
-  // every remote configuration fetch (see appendConfigurationScope). Merge
+  // every remote configuration fetch (see scopeConfigurationUrl). Merge
   // semantics: string values set or replace a key, null (or undefined) deletes
   // it, keys not mentioned are untouched. Resolves with the resulting scope.
   fetchConfigurationScope: ():Promise<{ [key: string]: string }> => {
