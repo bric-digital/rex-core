@@ -1,6 +1,6 @@
 import $ from 'jquery'
 
-import { type REXConfiguration, type REXUIDefinition } from "./common.mjs"
+import { type REXConfiguration, type REXUIDefinition, scopeConfigurationUrl } from "./common.mjs"
 
 export class REXExtensionModule {
   instantiationTarget:string
@@ -332,33 +332,43 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
           endpoint = configuration['configuration_url'] as string
         }
 
-        const configUrl:URL = new URL(endpoint.replaceAll('<IDENTIFIER>', encodeURIComponent(identifier)))
+        const resolvedEndpoint = endpoint.replaceAll('<IDENTIFIER>', encodeURIComponent(identifier))
 
-        fetch(configUrl)
-          .then((response: Response) => {
-            if (response.ok) {
-              response.json()
-                .then((jsonData:REXConfiguration) => {
-                  chrome.runtime.sendMessage({
-                    'messageType': 'updateConfiguration',
-                    'configuration': jsonData
-                  }).then((response: string) => {
-                    if (response === null || response === undefined || response.toLowerCase().startsWith('error')) {
-                      reject(`Received error from service worker: ${response}`)
-                    } else {
-                      resolve(identifier)
-                    }
-                  })
-                })
-                .catch((error) => {
-                  reject(`Received non-JSON response: ${error}`)
-                })
-          } else {
-            reject(`Received error status: ${response.statusText}`)
-          }
-        }, (reason:string) => {
-          reject(`Error fetching configuration from ${configUrl}:${reason}`)
-        })
+        // Scope is advisory here: an unscoped fetch is far better than a hung
+        // one, so a failed scope lookup falls back to the empty scope rather
+        // than rejecting the whole validation.
+        chrome.runtime.sendMessage({ 'messageType': 'fetchConfigurationScope' })
+          .then((scopeResponse:{ [key: string]: string }|null) => scopeResponse ?? {})
+          .catch(() => ({}))
+          .then((configurationScope:{ [key: string]: string }) => {
+            const configUrl:URL = scopeConfigurationUrl(resolvedEndpoint, configurationScope, chrome.runtime.getURL('/'))
+
+            fetch(configUrl)
+              .then((response: Response) => {
+                if (response.ok) {
+                  response.json()
+                    .then((jsonData:REXConfiguration) => {
+                      chrome.runtime.sendMessage({
+                        'messageType': 'updateConfiguration',
+                        'configuration': jsonData
+                      }).then((response: string) => {
+                        if (response === null || response === undefined || response.toLowerCase().startsWith('error')) {
+                          reject(`Received error from service worker: ${response}`)
+                        } else {
+                          resolve(identifier)
+                        }
+                      })
+                    })
+                    .catch((error) => {
+                      reject(`Received non-JSON response: ${error}`)
+                    })
+                } else {
+                  reject(`Received error status: ${response.statusText}`)
+                }
+              }, (reason:string) => {
+                reject(`Error fetching configuration from ${configUrl}:${reason}`)
+              })
+          })
       })
     })
   }

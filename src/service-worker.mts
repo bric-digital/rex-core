@@ -1,4 +1,4 @@
-import { type REXConfiguration, hash } from "./common.mjs"
+import { type REXConfiguration, hash, scopeConfigurationUrl } from "./common.mjs"
 
 export interface EventPayload {
   'name':string,
@@ -97,6 +97,8 @@ function resolveConfigurationUrl(configUrlStr:string, identifier:string):string 
 
   return configUrlStr.replaceAll('<IDENTIFIER>', identifier)
 }
+
+const CONFIGURATION_SCOPE_STORAGE_KEY = 'rexConfigurationScope'
 
 let rexDatabase:IDBDatabase|null = null
 
@@ -230,6 +232,24 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       return true
     }
 
+    if (message.messageType === 'setConfigurationScope') {
+      rexCorePlugin.setConfigurationScope(message.scope)
+        .then((scope:{ [key: string]: string }) => {
+          sendResponse(scope)
+        })
+
+      return true
+    }
+
+    if (message.messageType === 'fetchConfigurationScope') {
+      rexCorePlugin.fetchConfigurationScope()
+        .then((scope:{ [key: string]: string }) => {
+          sendResponse(scope)
+        })
+
+      return true
+    }
+
     if (message.messageType === 'refreshConfiguration') {
       rexCorePlugin.fetchConfiguration()
         .then((configuration:REXConfiguration) => {
@@ -238,12 +258,13 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
 
           const configUrlStr = configuration['configuration_url'] as string
 
-          chrome.storage.local.get('rexIdentifier')
+          chrome.storage.local.get(['rexIdentifier', CONFIGURATION_SCOPE_STORAGE_KEY])
             .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
               const idResponse:REXIdentifierResponse = response as REXIdentifierResponse
               const identifier = idResponse.rexIdentifier
+              const configurationScope = (response[CONFIGURATION_SCOPE_STORAGE_KEY] as { [key: string]: string } | undefined) ?? {}
 
-              const configUrl:URL = new URL(resolveConfigurationUrl(configUrlStr, identifier))
+              const configUrl:URL = scopeConfigurationUrl(resolveConfigurationUrl(configUrlStr, identifier), configurationScope, chrome.runtime.getURL('/'))
 
               fetch(configUrl)
                 .then((response: Response) => {
@@ -500,6 +521,37 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
   },
   generateHash: (cleartext:string, algorithm:string = 'SHA-256'): Promise<string> => {
     return hash(cleartext, algorithm)
+  },
+  // Configuration scope: persisted client-defined key/value pairs appended to
+  // every remote configuration fetch (see scopeConfigurationUrl). Merge
+  // semantics: string values set or replace a key, null (or undefined) deletes
+  // it, keys not mentioned are untouched. Resolves with the resulting scope.
+  fetchConfigurationScope: ():Promise<{ [key: string]: string }> => {
+    return chrome.storage.local.get(CONFIGURATION_SCOPE_STORAGE_KEY)
+      .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+        const storedScope = response[CONFIGURATION_SCOPE_STORAGE_KEY] as { [key: string]: string } | undefined
+
+        return storedScope ?? {}
+      })
+  },
+  setConfigurationScope: (scope:{ [key: string]: string | null }):Promise<{ [key: string]: string }> => {
+    return rexCorePlugin.fetchConfigurationScope()
+      .then((currentScope) => {
+        const updatedScope:{ [key: string]: string } = { ...currentScope }
+
+        for (const scopeKey of Object.keys(scope ?? {})) {
+          const scopeValue = scope[scopeKey]
+
+          if (scopeValue === null || scopeValue === undefined) {
+            delete updatedScope[scopeKey]
+          } else if (typeof scopeValue === 'string') {
+            updatedScope[scopeKey] = scopeValue
+          }
+        }
+
+        return chrome.storage.local.set({ [CONFIGURATION_SCOPE_STORAGE_KEY]: updatedScope })
+          .then(() => updatedScope)
+      })
   }
 }
 

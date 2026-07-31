@@ -55,4 +55,5 @@ test.describe('REX Core: Identifier Verification', () => {
     await expect(payload['without-json']).toEqual('expected-error')
     await expect(payload['error']).toEqual('Received non-JSON response: SyntaxError: Unexpected token \'b\', "broken-endpoint" is not valid JSON')
   })
+
 })
