@@ -332,6 +332,18 @@ export class REXCoreIdentifierExtensionModule extends REXExtensionModule {
           endpoint = configuration['configuration_url'] as string
         }
 
+        // A server is the default assumption: a missing configuration_url is
+        // treated as a misconfiguration and fails loudly rather than quietly
+        // accepting identifiers unvalidated. Deliberately serverless builds
+        // declare it with configuration_url: "rex-config://<file>", which the
+        // normal resolution below handles.
+        if (endpoint === undefined || endpoint === null || endpoint === '') {
+          console.error('[rex-core] No configuration_url configured. Set one, or use "rex-config://<file>" for a serverless build.')
+          reject('No configuration_url configured. Set one, or use "rex-config://<file>" for a serverless build.')
+
+          return
+        }
+
         const resolvedEndpoint = endpoint.replaceAll('<IDENTIFIER>', encodeURIComponent(identifier))
 
         // Scope is advisory here: an unscoped fetch is far better than a hung

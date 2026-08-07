@@ -149,27 +149,39 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       rexCorePlugin.openExtensionWindow()
     })
 
-    const loadedScripts = new Set()
+    // Extensions that need the browser bundle at document_start (e.g. page
+    // manipulation) declare it as a manifest content script; injecting it
+    // again here would run every browser-context module twice per page.
+    const manifestContentScripts:Array<{ js?: string[] }> = chrome.runtime.getManifest().content_scripts ?? []
+    const bundleDeclaredInManifest = manifestContentScripts.some(
+      (contentScript) => (contentScript.js ?? []).some((path) => path.endsWith('browser/bundle.js'))
+    )
 
-    chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-      if (changeInfo.status === 'complete') {
-        loadedScripts.delete(`${tabId}-${tab.url}`)
-      } else if (changeInfo.status === 'loading' && loadedScripts.has(`${tabId}-${tab.url}`) === false) {
-        loadedScripts.add(`${tabId}-${tab.url}`)
+    if (bundleDeclaredInManifest) {
+      console.log('[rex-core] Browser bundle is a manifest content script; skipping dynamic injection.')
+    } else {
+      const loadedScripts = new Set()
 
-        if (tab.url !== undefined && (tab.url.startsWith('https://') || tab.url.startsWith('http://'))) {
-          chrome.scripting.executeScript({
-            target: {
-            tabId: tabId,
-            allFrames: true
-            },
-            files: ['/js/browser/bundle.js']
-          }, function (result) { // eslint-disable-line @typescript-eslint/no-unused-vars
-            console.log('[rex-core] Content script loaded.')
-          })
+      chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+        if (changeInfo.status === 'complete') {
+          loadedScripts.delete(`${tabId}-${tab.url}`)
+        } else if (changeInfo.status === 'loading' && loadedScripts.has(`${tabId}-${tab.url}`) === false) {
+          loadedScripts.add(`${tabId}-${tab.url}`)
+
+          if (tab.url !== undefined && (tab.url.startsWith('https://') || tab.url.startsWith('http://'))) {
+            chrome.scripting.executeScript({
+              target: {
+              tabId: tabId,
+              allFrames: true
+              },
+              files: ['/js/browser/bundle.js']
+            }, function (result) { // eslint-disable-line @typescript-eslint/no-unused-vars
+              console.log('[rex-core] Content script loaded.')
+            })
+          }
         }
-      }
-    })
+      })
+    }
 
     console.log(`[rex-core] Registered message listener...`)
     chrome.runtime.onMessage.addListener(rexCorePlugin.handleMessage)
@@ -257,6 +269,16 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           console.log(configuration)
 
           const configUrlStr = configuration['configuration_url'] as string
+
+          // A server is the default assumption: a missing configuration_url is
+          // a misconfiguration, reported loudly. Deliberately serverless builds
+          // declare configuration_url: "rex-config://<file>", which refreshes
+          // from the bundled file through the normal resolution below.
+          if (configUrlStr === undefined || configUrlStr === null || configUrlStr === '') {
+            console.error('[rex-core] No configuration_url configured. Set one, or use "rex-config://<file>" for a serverless build.')
+            sendResponse(null)
+            return
+          }
 
           chrome.storage.local.get(['rexIdentifier', CONFIGURATION_SCOPE_STORAGE_KEY])
             .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
