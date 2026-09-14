@@ -232,7 +232,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
                 }
               }).catch((err) => {
                 if (now - start > event.timeout) {
-                  throw new Error(`event.timeout exceeded: ${event.timeout}`)
+                  throw new Error(`event.timeout exceeded: ${event.timeout} - ${err}`)
                 } else {
                   self.setTimeout(checkConfig, 250)
                 }
