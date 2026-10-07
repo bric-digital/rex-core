@@ -149,7 +149,8 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
 
     chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
       console.log(`[rex-core] chrome.tabs.onUpdated: ${changeInfo.status}`)
-      
+      console.log(changeInfo)
+
       if (changeInfo.status === 'complete') {
         loadedScripts.delete(`${tabId}-${tab.url}`)
       } else if (changeInfo.status === 'loading' && loadedScripts.has(`${tabId}-${tab.url}`) === false) {
@@ -158,8 +159,8 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
         if (tab.url !== undefined && (tab.url.startsWith('https://') || tab.url.startsWith('http://'))) {
           chrome.scripting.executeScript({
             target: {
-            tabId: tabId,
-            allFrames: false // TODO: Review whether this caused any unintended side-effects. Potentially move to configuration.
+              tabId: tabId,
+              allFrames: false // TODO: Review whether this caused any unintended side-effects. Potentially move to configuration.
             },
             files: ['/js/browser/bundle.js']
           }, function (result) { // eslint-disable-line @typescript-eslint/no-unused-vars
