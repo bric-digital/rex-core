@@ -148,6 +148,8 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     const loadedScripts = new Set()
 
     chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+      console.log(`[rex-core] chrome.tabs.onUpdated: ${changeInfo.status}`)
+      
       if (changeInfo.status === 'complete') {
         loadedScripts.delete(`${tabId}-${tab.url}`)
       } else if (changeInfo.status === 'loading' && loadedScripts.has(`${tabId}-${tab.url}`) === false) {
