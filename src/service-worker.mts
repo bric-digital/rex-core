@@ -145,28 +145,29 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       rexCorePlugin.openExtensionWindow()
     })
 
-    const loadedScripts = new Set()
-
     chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-      console.log(`[rex-core] chrome.tabs.onUpdated: ${changeInfo.status}`)
-      console.log(changeInfo)
+      if (tab.url !== undefined && (tab.url.startsWith('https://') || tab.url.startsWith('http://'))) {
+        chrome.scripting.executeScript({
+          target: {
+            tabId: tabId,
+            allFrames: false // TODO: Review whether this caused any unintended side-effects. Potentially move to configuration.
+          },
+          func: () => {
+            if (self.rexClientScriptLoaded === undefined) {
+              self.rexClientScriptLoaded = Date.now()
 
-      if (changeInfo.status === 'complete') {
-        loadedScripts.delete(`${tabId}-${tab.url}`)
-      } else if (changeInfo.status === 'loading' && loadedScripts.has(`${tabId}-${tab.url}`) === false) {
-        loadedScripts.add(`${tabId}-${tab.url}`)
-
-        if (tab.url !== undefined && (tab.url.startsWith('https://') || tab.url.startsWith('http://'))) {
-          chrome.scripting.executeScript({
-            target: {
-              tabId: tabId,
-              allFrames: false // TODO: Review whether this caused any unintended side-effects. Potentially move to configuration.
-            },
-            files: ['/js/browser/bundle.js']
-          }, function (result) { // eslint-disable-line @typescript-eslint/no-unused-vars
-            console.log('[rex-core] Content script loaded.')
-          })
-        }
+              chrome.runtime.sendMessage({
+                messageType: 'loadPageScript'
+              }).then((message) => {
+                console.log(`[rex-core] Received message: ${message}`)
+              })
+            } else {
+              console.log(`[rex-core] REX content script already loaded. Skipping. (${self.rexClientScriptLoaded})`)
+            }
+          }
+        }, function (result) { // eslint-disable-line @typescript-eslint/no-unused-vars
+          console.log('[rex-core] Initial content script sent.')
+        })
       }
     })
 
@@ -202,9 +203,31 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       }
     }
   },
-  handleMessage: (message:any, sender:any, sendResponse:(response:any) => void):boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
+  handleMessage: (message:any, sender:chrome.runtime.MessageSender, sendResponse:(response:any) => void):boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
     if (check.function(sendResponse) === false) {
       throw new Error(`sendResponse is not a function.`)
+    }
+
+    if (message.messageType === 'loadPageScript') {
+      if (sender.tab !== undefined && sender.tab.id) {
+        console.log('[rex-core] Loading content script...')
+
+        const tabId:number = sender.tab.id
+
+        chrome.scripting.executeScript({
+          target: {
+            tabId,
+            allFrames: false // TODO: Review whether this caused any unintended side-effects. Potentially move to configuration.
+          },
+          files: ['/js/browser/bundle.js']
+        }, function (result) { // eslint-disable-line @typescript-eslint/no-unused-vars
+          sendResponse('Content script loaded.')
+        })
+      } else {
+        console.log('[rex-core] Unable to load content script.')
+      }
+
+      return true
     }
 
     if (message.messageType == 'loadInitialConfiguration') {
