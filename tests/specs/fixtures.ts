@@ -20,15 +20,11 @@ export const test = base.extend<{
       args: [
         `--disable-extensions-except=${pathToExtension}`,
         `--load-extension=${pathToExtension}`,
+        `--enable-features=DeclarativeNetRequestFeedback`,
       ],
     });
 
-    use(context)
-      .then(() => {
-        setTimeout(() => {
-          context.close();
-        }, 10000)
-    })
+    await use(context)
   },
   extensionId: async ({ context }, use) => {
     // for manifest v3:
@@ -40,6 +36,10 @@ export const test = base.extend<{
     await use(extensionId);
   },
   serviceWorker: async ({ context }, use) => {
+    context.on('console', msg => {
+      console.log(msg);
+    })
+
     let [serviceWorker] = context.serviceWorkers();
     if (!serviceWorker) {
       serviceWorker = await context.waitForEvent('serviceworker');

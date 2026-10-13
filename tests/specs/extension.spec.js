@@ -16,6 +16,8 @@ test.describe('REX Core', () => {
   // fails wherever the network is slower than the developer's machine (this was
   // failing on CI while passing locally).
   test('Validate extension loaded.', async ({ page, extensionId }) => {
+    await page.waitForTimeout(2500);
+
     await page.goto(`chrome-extension://${extensionId}/index.html`);
 
     await expect(page).toHaveTitle(/REX Core Module Loading Test/, { timeout: 15000 });

@@ -13,14 +13,15 @@ import { test, expect } from './fixtures.js';
  * work landing ahead of it shifts that timing, so this file sorts after it.
  */
 test.describe('REX Core: Configuration Scope', () => {
-  test.setTimeout(60_000)
-
   test('Validate identifier verification applies the configuration scope.', async ({ page, extensionId }) => {
+    await page.waitForTimeout(2500);
+
     await page.goto(`chrome-extension://${extensionId}/index.html`);
 
     await expect(page).toHaveTitle(/REX Core Module Loading Test/);
 
     const requestedUrls = []
+    
     page.on('request', (request) => {
       if (request.url().includes('validate-json.json')) {
         requestedUrls.push(request.url())
