@@ -124,7 +124,7 @@ class NetworkTestExtensionModule extends REXExtensionModule {
           this.startedFetch = true
 
           window.setTimeout(() => {
-            fetch('https://api.github.com/', { signal: AbortSignal.timeout(120000) })
+            fetch('http://localhost:3000/', { signal: AbortSignal.timeout(120000) })
               .then((response: Response) => {
                 if (response.ok) {
                   response.blob().then((responseBlob) => {

@@ -1,3 +1,5 @@
+import check from 'check-types'
+
 import { type REXConfiguration, hash, scopeConfigurationUrl } from "./common.mjs"
 
 export interface EventPayload {
@@ -30,7 +32,7 @@ export class REXServiceWorkerModule {
 
   logEvent(event:object) {
     if (event !== undefined) {
-      console.log('REXServiceWorkerModule: implement "logEvent" in subclass...')
+      // console.log('REXServiceWorkerModule: implement "logEvent" in subclass...')
     }
   }
 
@@ -104,7 +106,6 @@ let rexDatabase:IDBDatabase|null = null
 
 const rexCorePlugin = { // TODO rename to "engine" or something...
   openExtensionWindow: () => {
-    console.log('openExtensionWindow')
     const optionsUrl = chrome.runtime.getURL('index.html')
 
     chrome.tabs.query({}, function (extensionTabs) {
@@ -128,8 +129,6 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     console.log(`[rex-core] Running setup...`)
 
     chrome.runtime.onInstalled.addListener(function (details:object) { // eslint-disable-line @typescript-eslint/no-unused-vars
-      console.log(`[rex-core] chrome.runtime.onInstalled.addListener`)
-
       // Record the install time once, the first time it is seen. Stored here so
       // every extension has it via the getInstallTime message instead of each
       // study extension recording its own. Set-if-absent so updates/reloads
@@ -145,33 +144,38 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     })
 
     chrome.action.onClicked.addListener(function (tab) { // eslint-disable-line @typescript-eslint/no-unused-vars
-      console.log(`[rex-core] chrome.action.onClicked.addListener`)
       rexCorePlugin.openExtensionWindow()
     })
 
-    const loadedScripts = new Set()
-
     chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-      if (changeInfo.status === 'complete') {
-        loadedScripts.delete(`${tabId}-${tab.url}`)
-      } else if (changeInfo.status === 'loading' && loadedScripts.has(`${tabId}-${tab.url}`) === false) {
-        loadedScripts.add(`${tabId}-${tab.url}`)
-
-        if (tab.url !== undefined && (tab.url.startsWith('https://') || tab.url.startsWith('http://'))) {
-          chrome.scripting.executeScript({
-            target: {
+      if (tab.url !== undefined && (tab.url.startsWith('https://') || tab.url.startsWith('http://'))) {
+        chrome.scripting.executeScript({
+          target: {
             tabId: tabId,
-            allFrames: true
-            },
-            files: ['/js/browser/bundle.js']
-          }, function (result) { // eslint-disable-line @typescript-eslint/no-unused-vars
-            console.log('[rex-core] Content script loaded.')
-          })
-        }
+            allFrames: false // TODO: Review whether this caused any unintended side-effects. Potentially move to configuration.
+          },
+          func: () => {
+            // @ts-expect-error: rexClientScriptLoaded is not defined on the Window object
+            if (self.rexClientScriptLoaded === undefined) {
+              // @ts-expect-error: rexClientScriptLoaded is not defined on the Window object
+              self.rexClientScriptLoaded = Date.now()
+
+              chrome.runtime.sendMessage({
+                messageType: 'loadPageScript'
+              }).then((message) => {
+                console.log(`[rex-core] Received message: ${message}`)
+              })
+            } else {
+              // @ts-expect-error: rexClientScriptLoaded is not defined on the Window object
+              console.log(`[rex-core] REX content script already loaded. Skipping. (${self.rexClientScriptLoaded})`)
+            }
+          }
+        }, function (result) { // eslint-disable-line @typescript-eslint/no-unused-vars
+          console.log('[rex-core] Initial content script sent.')
+        })
       }
     })
 
-    console.log(`[rex-core] Registered message listener...`)
     chrome.runtime.onMessage.addListener(rexCorePlugin.handleMessage)
 
     const request = indexedDB.open('rex_db', REX_DATABASE_VERSION)
@@ -187,7 +191,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     }
 
     request.onupgradeneeded = (event) => {
-      console.log(`[rex-core] Upgrade needed...`)
+      console.log(`[rex-core] Database upgrade required...`)
       console.log(event)
 
       rexDatabase = request.result
@@ -204,12 +208,75 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       }
     }
   },
-  handleMessage: (message:any, sender:any, sendResponse:(response:any) => void):boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
+  handleMessage: (message:any, sender:chrome.runtime.MessageSender, sendResponse:(response:any) => void):boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    if (check.function(sendResponse) === false) {
+      throw new Error(`sendResponse is not a function.`)
+    }
+
+    if (message.messageType === 'loadPageScript') {
+      if (sender.tab !== undefined && sender.tab.id) {
+        console.log('[rex-core] Loading content script...')
+
+        const tabId:number = sender.tab.id
+
+        chrome.scripting.executeScript({
+          target: {
+            tabId,
+            allFrames: false // TODO: Review whether this caused any unintended side-effects. Potentially move to configuration.
+          },
+          files: ['/js/browser/bundle.js']
+        }, function (result) { // eslint-disable-line @typescript-eslint/no-unused-vars
+          sendResponse('Content script loaded.')
+        })
+      } else {
+        console.log('[rex-core] Unable to load content script.')
+      }
+
+      return true
+    }
+
     if (message.messageType == 'loadInitialConfiguration') {
       rexCorePlugin.initializeConfiguration(message.configuration)
         .then((response:string) => {
           sendResponse(response)
         })
+
+      return true
+    }
+
+    if (message.messageType == 'waitForConfiguration') {
+      const event = message.event
+
+      if (event !== undefined) {
+        if (event.timeout !== undefined) {
+          const start = Date.now()
+
+          const checkConfig = () => {
+            const now = Date.now()
+
+            rexCorePlugin.fetchConfiguration()
+              .then((configuration:REXConfiguration) => {
+                if (configuration === undefined) {
+                  throw new Error(`Configuration is undefined.`)
+                } else {
+                  sendResponse(configuration)
+                }
+              }).catch((err) => {
+                if (now - start > event.timeout) {
+                  throw new Error(`event.timeout exceeded: ${event.timeout} - ${err}`)
+                } else {
+                  self.setTimeout(checkConfig, 250)
+                }
+              })
+          }
+
+          checkConfig()
+        } else {
+          throw new Error('event.timeout is undefined')
+        }
+      } else {
+        throw new Error('event is undefined')
+      }
 
       return true
     }
@@ -253,8 +320,8 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     if (message.messageType === 'refreshConfiguration') {
       rexCorePlugin.fetchConfiguration()
         .then((configuration:REXConfiguration) => {
-          console.log('[rex-core] Fetched configuration:')
-          console.log(configuration)
+          // console.log('[rex-core] Fetched configuration:')
+          // console.log(configuration)
 
           const configUrlStr = configuration['configuration_url'] as string
 
@@ -270,9 +337,6 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
                 .then((response: Response) => {
                   if (response.ok) {
                     response.json().then((jsonData:REXConfiguration) => {
-                      console.log(`${configUrl}:`)
-                      console.log(jsonData)
-
                       if (jsonData === null || jsonData === undefined) {
                         sendResponse(null)
                         return
@@ -371,7 +435,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
         }
 
         cursorRequest.onerror = event => {
-          console.log(`fetch error for ${message.key}...`)
+          console.log(`[rex-core] Fetch error for ${message.key}...`)
           console.log(event)
 
           sendResponse(null)
@@ -395,13 +459,11 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
             const putRequest = objectStore.put(newValue, newValue.key)
 
             putRequest.onsuccess = function (putEvent) { // eslint-disable-line @typescript-eslint/no-unused-vars
-              console.log(`[rex-core] Value saved successfully. ${newValue.key} = ${newValue.value}.`)
-
               sendResponse(true)
             }
 
             putRequest.onerror = function (putEvent) {
-              console.error(`[rex-core] Value NOT saved successfully. ${newValue.key} = ${newValue.value}.`)
+              console.error(`[rex-core] Value NOT inserted successfully. ${newValue.key} = ${newValue.value}.`)
               console.error(putEvent)
 
               sendResponse(false)
@@ -421,9 +483,6 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
         const cursorRequest = index.openCursor(IDBKeyRange.only(message.key));
 
         cursorRequest.onsuccess = event => {
-          console.log(`fetched for ${message.key}...`)
-          console.log(event)
-
           if (event.target !== null) {
             const cursor = (event.target as any)['result']// eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -433,13 +492,11 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
               const updateRequest = cursor.update(newValue)
 
               updateRequest.onsuccess = function (updateEvent:any) { // eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-                console.log(`[rex-core] Value saved successfully. ${message.key} = ${newValue.value}.`)
-
                 sendResponse(true)
               }
 
               updateRequest.onerror = function (updateEvent:any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-                console.error(`[rex-core] Value NOT saved successfully. ${message.key} = ${newValue.value}.`)
+                console.error(`[rex-core] Value NOT updated successfully. ${message.key} = ${newValue.value}.`)
                 console.error(updateEvent)
 
                 sendResponse(false)
@@ -448,7 +505,9 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
           }
         }
 
-        cursorRequest.onerror = event => { // eslint-disable-line @typescript-eslint/no-unused-vars
+        cursorRequest.onerror = event => {
+          console.log(`[rex-core] Error opening cursor:`)
+          console.log(event)
           doInsert()
         }
       }
@@ -462,8 +521,6 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       if (extensionModule.handleMessage !== undefined) {
         if (extensionModule.handleMessage(message, sender, sendResponse)) {
           handled = true
-          console.log(`[rex-core] ${extensionModule} handles message:`)
-          console.log(message)
         }
       }
     }
@@ -481,7 +538,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
         .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
           const configResponse:REXConfigurationResponse = response as REXConfigurationResponse
 
-          if (configResponse.REXConfiguration !== undefined) {
+          if ([null, undefined, ''].includes(configResponse.REXConfiguration as any) === false) { // eslint-disable-line @typescript-eslint/no-explicit-any
             resolve('Error: Configuration already initialized.')
           } else {
             chrome.storage.local.set({
@@ -512,11 +569,13 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
     })
   },
   fetchConfiguration: ():Promise<REXConfiguration> => {
-    return new Promise((resolve, reject) => { // eslint-disable-line @typescript-eslint/no-unused-vars
+    return new Promise((resolve, reject) => {
       chrome.storage.local.get('REXConfiguration')
         .then((response:{ [name: string]: any; }) => { // eslint-disable-line @typescript-eslint/no-explicit-any
           const idResponse:REXConfigurationResponse = response as REXConfigurationResponse
           resolve(idResponse.REXConfiguration)
+        }).catch(() => {
+          reject()
         })
     })
   },
