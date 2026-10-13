@@ -9,14 +9,11 @@ test.describe('REX Core: Identifier Verification', () => {
   test.setTimeout(60_000)  
 
   test('Validate identifier verification.', async ({ page, extensionId }) => {
+    await page.waitForTimeout(2500);
+
     await page.goto(`chrome-extension://${extensionId}/index.html`);
 
     await expect(page).toHaveTitle(/REX Core Module Loading Test/);
-
-    // Listen for all console events and handle errors
-    page.on('console', msg => {
-      console.log(msg);
-    })
 
     const payload = await page.evaluate(() => {
       return new Promise((testResolve) => {
