@@ -153,7 +153,9 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
             allFrames: false // TODO: Review whether this caused any unintended side-effects. Potentially move to configuration.
           },
           func: () => {
+            // @ts-expect-error: rexClientScriptLoaded is not defined on the Window object
             if (self.rexClientScriptLoaded === undefined) {
+              // @ts-expect-error: rexClientScriptLoaded is not defined on the Window object
               self.rexClientScriptLoaded = Date.now()
 
               chrome.runtime.sendMessage({
@@ -162,6 +164,7 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
                 console.log(`[rex-core] Received message: ${message}`)
               })
             } else {
+              // @ts-expect-error: rexClientScriptLoaded is not defined on the Window object
               console.log(`[rex-core] REX content script already loaded. Skipping. (${self.rexClientScriptLoaded})`)
             }
           }
