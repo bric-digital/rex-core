@@ -42,7 +42,7 @@
         "bootstrap": "^5.3.8",
         "bootstrap-icons": "^1.13.1",
         "check-types": "^11.2.3",
-        "chrome-types": "^0.1.436",
+        "chrome-types": "^0.1.456",
         "esbuild": "^0.28.1",
         "eslint": "^10.8.0",
         "globals": "^17.7.0",
