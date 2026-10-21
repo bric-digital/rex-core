@@ -208,12 +208,12 @@ const rexCorePlugin = { // TODO rename to "engine" or something...
       }
     }
   },
-  handleMessage: (message:any, sender:chrome.runtime.MessageSender, sendResponse:(response:any) => void):boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
+  handleMessage: (message:any, sender:chrome.runtime.MessageSender|null, sendResponse:(response:any) => void):boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
     if (check.function(sendResponse) === false) {
       throw new Error(`sendResponse is not a function.`)
     }
 
-    if (message.messageType === 'loadPageScript') {
+    if (sender !== null && message.messageType === 'loadPageScript') {
       if (sender.tab !== undefined && sender.tab.id) {
         console.log('[rex-core] Loading content script...')
 
