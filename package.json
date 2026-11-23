@@ -47,7 +47,7 @@
         "eslint": "^10.14.0",
         "globals": "^17.14.0",
         "jiti": "^2.7.0",
-        "jquery": "^4.0.0",
+        "jquery": "^4.1.0",
         "psl": "^1.15.0",
         "typescript-eslint": "^8.72.2"
     },
